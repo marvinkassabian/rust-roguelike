@@ -5,13 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Launch",
             "type": "lldb",
             "request": "launch",
-            "name": "Debug",
             "program": "${workspaceRoot}/target/debug/${workspaceFolderBasename}",
             "args": [],
             "cwd": "${workspaceRoot}", 
-            "preLaunchTask": "Rust: cargo build",
+            "preLaunchTask": "Rust: cargo build"
         }
     ]
 }
