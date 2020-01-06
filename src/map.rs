@@ -2,9 +2,7 @@ use std::cmp::{max, min};
 
 use rltk::{Console, RandomNumberGenerator, RGB, Rltk};
 
-use crate::{PLAYER_START_X, PLAYER_START_Y, Rect};
-
-use super::{WINDOW_HEIGHT, WINDOW_WIDTH};
+use super::{Rect, WINDOW_HEIGHT, WINDOW_WIDTH};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum TileType {
@@ -18,41 +16,23 @@ pub struct Coordinate {
     pub y: i32,
 }
 
-pub fn xy_idx(x: i32, y: i32) -> usize {
-    ((y * WINDOW_WIDTH) + x) as usize
+pub struct Map {
+    pub tiles: Vec<TileType>,
+    pub rooms: Vec<Rect>,
+    pub width: i32,
+    pub height: i32,
 }
 
-/// Makes a map with solid boundaries and 400 randomly placed walls. No guarantees that it won't
-/// look awful.
-pub fn new_map_test() -> Vec<TileType> {
-    let mut map = vec![TileType::Floor; (WINDOW_WIDTH * WINDOW_HEIGHT) as usize];
-
-    for x in 0..WINDOW_WIDTH {
-        map[xy_idx(x, 0)] = TileType::Wall;
-        map[xy_idx(x, WINDOW_HEIGHT - 1)] = TileType::Wall;
+impl Map {
+    pub fn xy_idx(&self, x: i32, y: i32) -> usize {
+        ((y * self.width) + x) as usize
     }
-
-    for y in 0..WINDOW_HEIGHT {
-        map[xy_idx(0, y)] = TileType::Wall;
-        map[xy_idx(WINDOW_WIDTH - 1, y)] = TileType::Wall;
-    }
-
-    let mut rng = RandomNumberGenerator::seeded(1);
-
-    for _i in 0..WINDOW_WIDTH * WINDOW_HEIGHT {
-        let x = rng.roll_dice(1, WINDOW_WIDTH - 1);
-        let y = rng.roll_dice(1, WINDOW_HEIGHT - 1);
-        let idx = xy_idx(x, y);
-        if idx != xy_idx(PLAYER_START_X, PLAYER_START_Y) {
-            map[idx] = TileType::Wall;
-        }
-    }
-
-    map
 }
 
-pub fn new_map_rooms_and_corridors() -> Vec<TileType> {
-    let mut map = vec![TileType::Wall; (WINDOW_WIDTH * WINDOW_HEIGHT) as usize];
+/// Makes a new map using the algorithm from http://rogueliketutorials.com/tutorials/tcod/part-3/
+/// This gives a handful of random rooms and corridors joining them together.
+pub fn new_map_rooms_and_corridors() -> Map {
+    let mut tiles = vec![TileType::Wall; (WINDOW_WIDTH * WINDOW_HEIGHT) as usize];
 
     let mut rooms: Vec<Rect> = Vec::new();
     const MAX_ROOMS: i32 = 30;
@@ -61,7 +41,34 @@ pub fn new_map_rooms_and_corridors() -> Vec<TileType> {
 
     let mut rng = RandomNumberGenerator::seeded(1);
 
-    for i in 0..MAX_ROOMS {
+
+    let apply_room_to_map = |room: &Rect| => {
+        for y in room.y1 + 1..=room.y2 {
+            for x in room.x1 + 1..=room.x2 {
+                tiles[xy_idx(x, y)] = TileType::Floor;
+            }
+        }
+    }
+
+    fn apply_horizontal_tunnel(map: &mut [TileType], x1: i32, x2: i32, y: i32) {
+        for x in min(x1, x2)..=max(x1, x2) {
+            let idx = xy_idx(x, y);
+            if idx > 0 && idx < (WINDOW_WIDTH * WINDOW_HEIGHT) as usize {
+                map[idx as usize] = TileType::Floor;
+            }
+        }
+    }
+
+    fn apply_vertical_tunnel(map: &mut [TileType], y1: i32, y2: i32, x: i32) {
+        for y in min(y1, y2)..=max(y1, y2) {
+            let idx = xy_idx(x, y);
+            if idx > 0 && idx < (WINDOW_WIDTH * WINDOW_HEIGHT) as usize {
+                map[idx as usize] = TileType::Floor;
+            }
+        }
+    }
+
+    for _i in 0..MAX_ROOMS {
         let w = rng.range(MIN_SIZE, MAX_SIZE);
         let h = rng.range(MIN_SIZE, MAX_SIZE);
         let x = rng.roll_dice(1, WINDOW_WIDTH - w - 1) - 1;
@@ -71,15 +78,20 @@ pub fn new_map_rooms_and_corridors() -> Vec<TileType> {
         let ok = rooms.iter().all(|other_room| !new_room.intersect(other_room));
 
         if ok {
-            apply_room_to_map(&new_room, &mut map);
+            apply_room_to_map(&new_room, &mut tiles);
 
-            let prev_room = rooms.last();
+            let prev_room_or_none = rooms.last();
 
-            match prev_room {
-                None => {}
-                Some(prev_room) => {
-                    let new_center = new_room.center();
-                    let prev_center = prev_room.center();
+            if let Some(prev_room) = prev_room_or_none {
+                let new = new_room.center();
+                let prev = prev_room.center();
+
+                if rng.range(0, 2) == 1 {
+                    apply_horizontal_tunnel(&mut tiles, prev.x, new.x, prev.y);
+                    apply_vertical_tunnel(&mut tiles, prev.y, new.y, new.x);
+                } else {
+                    apply_horizontal_tunnel(&mut tiles, prev.x, new.x, new.y);
+                    apply_vertical_tunnel(&mut tiles, prev.y, new.y, prev.x);
                 }
             }
 
@@ -87,33 +99,7 @@ pub fn new_map_rooms_and_corridors() -> Vec<TileType> {
         }
     }
 
-    map
-}
-
-fn apply_room_to_map(room: &Rect, map: &mut [TileType]) {
-    for y in room.y1 + 1..=room.y2 {
-        for x in room.x1 + 1..=room.x2 {
-            map[xy_idx(x, y)] = TileType::Floor;
-        }
-    }
-}
-
-fn apply_horizontal_tunnel(map: &mut [TileType], x1: i32, x2: i32, y: i32) {
-    for x in min(x1, x2)..=max(x1, x2) {
-        let idx = xy_idx(x, y);
-        if idx > 0 && idx < (WINDOW_WIDTH * WINDOW_HEIGHT) as usize {
-            map[idx as usize] = TileType::Floor;
-        }
-    }
-}
-
-fn apply_vertical_tunnel(map: &mut [TileType], y1: i32, y2: i32, x: i32) {
-    for y in min(y1, y2)..=max(y1, y2) {
-        let idx = xy_idx(x, y);
-        if idx > 0 && idx < (WINDOW_WIDTH * WINDOW_HEIGHT) as usize {
-            map[idx as usize] = TileType::Floor;
-        }
-    }
+    (rooms, tiles)
 }
 
 pub fn draw_map(map: &[TileType], ctx: &mut Rltk) {

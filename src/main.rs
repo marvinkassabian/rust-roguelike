@@ -17,9 +17,6 @@ pub mod rect;
 pub const WINDOW_WIDTH: i32 = 80;
 pub const WINDOW_HEIGHT: i32 = 40;
 
-pub const PLAYER_START_X: i32 = 40;
-pub const PLAYER_START_Y: i32 = 25;
-
 pub struct State {
     ecs: World,
 }
@@ -75,23 +72,27 @@ fn main() {
         SHADER_PATH);
     let mut gs = State { ecs: World::new() };
 
-    let map = new_map_rooms_and_corridors();
+    let (rooms, map) = new_map_rooms_and_corridors();
     gs.ecs.insert(map);
 
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
     gs.ecs.register::<Player>();
 
-    gs.ecs
-        .create_entity()
-        .with(Position { x: PLAYER_START_X, y: PLAYER_START_Y })
-        .with(Renderable {
-            glyph: rltk::to_cp437('@'),
-            fg: RGB::named(rltk::YELLOW),
-            bg: RGB::named(rltk::BLACK),
-        })
-        .with(Player {})
-        .build();
+    let last_room_or_none = rooms.last();
+    if let Some(last_room) = last_room_or_none {
+        let last_center = last_room.center();
+        gs.ecs
+            .create_entity()
+            .with(Position { x: last_center.x, y: last_center.y })
+            .with(Renderable {
+                glyph: rltk::to_cp437('@'),
+                fg: RGB::named(rltk::YELLOW),
+                bg: RGB::named(rltk::BLACK),
+            })
+            .with(Player {})
+            .build();
+    }
 
     rltk::main_loop(context, gs);
 }

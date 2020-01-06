@@ -24,9 +24,16 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) {
         None => {}
         Some(key) => match key {
             VirtualKeyCode::Left => try_move_player(-1, 0, &mut gs.ecs),
+            VirtualKeyCode::H => try_move_player(-1, 0, &mut gs.ecs),
+
             VirtualKeyCode::Right => try_move_player(1, 0, &mut gs.ecs),
+            VirtualKeyCode::L => try_move_player(1, 0, &mut gs.ecs),
+
             VirtualKeyCode::Up => try_move_player(0, -1, &mut gs.ecs),
+            VirtualKeyCode::J => try_move_player(0, -1, &mut gs.ecs),
+
             VirtualKeyCode::Down => try_move_player(0, 1, &mut gs.ecs),
+            VirtualKeyCode::K => try_move_player(0, 1, &mut gs.ecs),
             _ => {}
         },
     }
