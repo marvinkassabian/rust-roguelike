@@ -1,4 +1,4 @@
-use crate::Coordinate;
+use rltk::Point;
 
 pub struct Rect {
     pub x1: i32,
@@ -17,8 +17,8 @@ impl Rect {
         self.x1 <= other.x2 && self.x2 >= other.x1 && self.y1 <= other.y2 && self.y2 >= other.y1
     }
 
-    pub fn center(&self) -> Coordinate {
-        Coordinate {
+    pub fn center(&self) -> Point {
+        Point {
             x: (self.x1 + self.x2) / 2,
             y: (self.y1 + self.y2) / 2,
         }
