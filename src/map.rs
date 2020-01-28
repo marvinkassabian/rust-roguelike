@@ -65,6 +65,17 @@ impl Map {
         self.visible_tiles[idx]
     }
 
+    fn is_exit_valid(&self, x: i32, y: i32) -> bool {
+        if !self.is_valid_idx(x, y) {
+            return false;
+        }
+
+        let idx = self.xy_idx(x, y);
+        let is_wall = self.tiles[idx as usize] == TileType::Wall;
+
+        !is_wall
+    }
+
     pub fn new(width: i32, height: i32, tile_type: TileType) -> Map {
         Map {
             tiles: vec![tile_type; (width * height) as usize],
@@ -99,8 +110,28 @@ impl BaseMap for Map {
         self.tiles[idx as usize] == TileType::Wall
     }
 
-    fn get_available_exits(&self, _idx: i32) -> Vec<(i32, f32)> {
-        Vec::new()
+    fn get_available_exits(&self, idx: i32) -> Vec<(i32, f32)> {
+        let mut available_exits: Vec::<(i32, f32)> = Vec::new();
+        let pt = self.index_to_point2d(idx);
+
+        const INITIAL_COST: f32 = 1.0;
+        let deltas = [
+            (0, -1),
+            (0, 1),
+            (1, 0),
+            (-1, 0)];
+
+        for delta in deltas.iter() {
+            let (delta_x, delta_y) = delta;
+            let new_x = pt.x + delta_x;
+            let new_y = pt.y + delta_y;
+            if self.is_exit_valid(new_x, new_y) {
+                let idx = self.xy_idx(new_x, new_y) as i32;
+                available_exits.push((idx, INITIAL_COST));
+            }
+        }
+
+        available_exits
     }
 
     fn get_pathing_distance(&self, idx1: i32, idx2: i32) -> f32 {
@@ -116,19 +147,18 @@ impl BaseMap for Map {
 /// This gives a handful of random rooms and corridors joining them together.
 pub fn new_map_rooms_and_corridors(width: i32, height: i32) -> Map {
     let mut map = Map::new(width, height, TileType::Wall);
+    let mut rng = Random::new();
 
     const MAX_ROOMS: i32 = 30;
     const MIN_SIZE: i32 = 6;
     const MAX_SIZE: i32 = 10;
-    const FRAME_WIDTH: i32 = 3;
-
-    let mut rng = Random::new();
+    const FRAME_WIDTH: i32 = 1;
 
     for _i in 0..MAX_ROOMS {
         let w = rng.range(MIN_SIZE, MAX_SIZE);
         let h = rng.range(MIN_SIZE, MAX_SIZE);
-        let x = rng.inclusive_range(FRAME_WIDTH, map.width - w - FRAME_WIDTH);
-        let y = rng.inclusive_range(FRAME_WIDTH, map.height - h - FRAME_WIDTH);
+        let x = rng.range(FRAME_WIDTH, map.width - w - FRAME_WIDTH);
+        let y = rng.range(FRAME_WIDTH, map.height - h - FRAME_WIDTH);
         let new_room = Rect::new(x, y, w, h);
 
         let ok = map.rooms.iter().all(|other_room| !new_room.intersect(other_room));

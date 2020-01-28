@@ -1,19 +1,30 @@
-use rltk::{Console, GameState, Rltk};
+use rltk::{Console, console, GameState, Rltk};
 use specs::prelude::*;
 use specs::WorldExt;
 
-use crate::{draw_map, Map, player_input, Position, Renderable, VisibilitySystem};
+use crate::{draw_map, Map, MonsterAI, player_input, Position, Renderable, VisibilitySystem};
+
+#[derive(PartialEq, Copy, Clone)]
+pub enum RunState { Paused, Running }
 
 pub struct State {
     pub ecs: World,
+    pub run_state: RunState,
 }
 
 impl GameState for State {
     fn tick(&mut self, ctx: &mut Rltk) {
         ctx.cls();
 
-        player_input(self, ctx);
-        self.run_systems();
+        match self.run_state {
+            RunState::Paused => {
+                self.run_state = player_input(self, ctx);
+            }
+            RunState::Running => {
+                self.run_systems();
+                self.run_state = RunState::Paused;
+            }
+        }
 
         draw_map(&self.ecs, ctx);
 
@@ -31,8 +42,13 @@ impl GameState for State {
 
 impl State {
     pub fn run_systems(&mut self) {
+        console::log("run_systems");
+
         let mut vis = VisibilitySystem {};
         vis.run_now(&self.ecs);
+        let mut mob = MonsterAI {};
+        mob.run_now(&self.ecs);
+
         self.ecs.maintain();
     }
 }

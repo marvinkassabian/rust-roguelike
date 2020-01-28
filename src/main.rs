@@ -1,12 +1,13 @@
 #[macro_use]
 extern crate specs_derive;
 
-use rltk::{RGB, Rltk};
+use rltk::{Point, RGB, Rltk};
 use specs::prelude::*;
 use specs::WorldExt;
 
 pub use components::*;
 pub use map::*;
+pub use monster_ai_system::*;
 pub use player::*;
 pub use random::*;
 pub use rect::*;
@@ -21,6 +22,7 @@ mod components;
 mod visibility_system;
 mod state;
 mod random;
+mod monster_ai_system;
 
 fn main() {
     pub const WINDOW_WIDTH: i32 = 80;
@@ -33,7 +35,7 @@ fn main() {
         WINDOW_HEIGHT as u32,
         title,
         SHADER_PATH);
-    let mut gs = State { ecs: World::new() };
+    let mut gs = State { ecs: World::new(), run_state: RunState::Running };
 
     let map = new_map_rooms_and_corridors(WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -42,11 +44,15 @@ fn main() {
     gs.ecs.register::<Player>();
     gs.ecs.register::<Viewshed>();
     gs.ecs.register::<Monster>();
+    gs.ecs.register::<Name>();
 
     let first_room = &(map.rooms).first();
+    let mut rng = Random::new();
 
     if let Some(first_room) = first_room {
         let pt = first_room.center();
+        gs.ecs.insert(Point::new(pt.x, pt.y));
+
         gs.ecs
             .create_entity()
             .with(Position { x: pt.x, y: pt.y })
@@ -61,18 +67,22 @@ fn main() {
                 range: 8,
                 dirty: true,
             })
+            .with(Name { name: "Player".to_string() })
             .build();
     }
 
-    for room in map.rooms.iter().skip(1) {
+    for (i, room) in map.rooms.iter().enumerate().skip(1) {
         let pt = room.center();
 
-        let mut rng = Random::new();
+        let glyph;
+        let name;
 
-        let glyph = if rng.flip_coin() {
-            rltk::to_cp437('o')
+        if rng.flip_coin() {
+            glyph = rltk::to_cp437('o');
+            name = "Orc";
         } else {
-            rltk::to_cp437('g')
+            glyph = rltk::to_cp437('g');
+            name = "Goblin";
         };
 
         gs.ecs
@@ -83,11 +93,13 @@ fn main() {
                 fg: RGB::named(rltk::RED),
                 bg: RGB::named(rltk::BLACK),
             })
+            .with(Monster {})
             .with(Viewshed {
                 visible_tiles: Vec::new(),
                 range: 8,
                 dirty: true,
             })
+            .with(Name { name: format!("{} #{}", name, i).to_string() })
             .build();
     }
 
