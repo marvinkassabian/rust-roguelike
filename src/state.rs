@@ -2,7 +2,15 @@ use rltk::{Console, console, GameState, Rltk};
 use specs::prelude::*;
 use specs::WorldExt;
 
-use crate::{draw_map, Map, MonsterAI, player_input, Position, Renderable, VisibilitySystem};
+use crate::{
+    draw_map,
+    Map,
+    MapIndexingSystem,
+    MonsterAI,
+    player_input,
+    Position,
+    Renderable,
+    VisibilitySystem};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState { Paused, Running }
@@ -46,8 +54,12 @@ impl State {
 
         let mut vis = VisibilitySystem {};
         vis.run_now(&self.ecs);
+
         let mut mob = MonsterAI {};
         mob.run_now(&self.ecs);
+
+        let mut map_index = MapIndexingSystem {};
+        map_index.run_now(&self.ecs);
 
         self.ecs.maintain();
     }

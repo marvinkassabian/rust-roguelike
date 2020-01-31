@@ -19,6 +19,8 @@ pub struct Map {
     pub height: i32,
     pub revealed_tiles: Vec<bool>,
     pub visible_tiles: Vec<bool>,
+    pub blocked: Vec<bool>,
+    pub tile_content: Vec<Vec<Entity>>,
 }
 
 impl Map {
@@ -32,7 +34,7 @@ impl Map {
     }
 
     pub fn safe_set(&mut self, x: i32, y: i32, tile: TileType) {
-        if self.is_valid_idx(x, y) {
+        if self.is_valid(x, y) {
             self.set(x, y, tile);
         }
     }
@@ -45,7 +47,7 @@ impl Map {
     }
 
     pub fn safe_get(&self, x: i32, y: i32) -> Option<TileType> {
-        if self.is_valid_idx(x, y) {
+        if self.is_valid(x, y) {
             let tile_type = self.get(x, y);
 
             Some(tile_type)
@@ -54,8 +56,12 @@ impl Map {
         }
     }
 
-    pub fn is_valid_idx(&self, x: i32, y: i32) -> bool {
+    pub fn is_valid(&self, x: i32, y: i32) -> bool {
         let idx = self.xy_idx(x, y);
+        self.is_valid_idx(idx)
+    }
+
+    pub fn is_valid_idx(&self, idx: usize) -> bool {
         idx < (self.width * self.height) as usize
     }
 
@@ -65,25 +71,46 @@ impl Map {
         self.visible_tiles[idx]
     }
 
+    pub fn is_blocked(&self, x: i32, y: i32) -> bool {
+        let idx = self.xy_idx(x, y);
+        let is_blocked = self.blocked[idx];
+
+        is_blocked
+    }
+
     fn is_exit_valid(&self, x: i32, y: i32) -> bool {
-        if !self.is_valid_idx(x, y) {
+        if !self.is_valid(x, y) {
             return false;
         }
 
-        let idx = self.xy_idx(x, y);
-        let is_wall = self.tiles[idx as usize] == TileType::Wall;
+        let is_blocked = self.is_blocked(x, y);
 
-        !is_wall
+        !is_blocked
+    }
+
+    pub fn populate_blocked(&mut self) {
+        for (i, tile) in self.tiles.iter_mut().enumerate() {
+            self.blocked[i] = *tile == TileType::Wall;
+        }
+    }
+
+    pub fn clear_content_index(&mut self) {
+        for content in self.tile_content.iter_mut() {
+            content.clear();
+        }
     }
 
     pub fn new(width: i32, height: i32, tile_type: TileType) -> Map {
+        let area = (width * height) as usize;
         Map {
-            tiles: vec![tile_type; (width * height) as usize],
+            tiles: vec![tile_type; area],
             rooms: Vec::new(),
             width,
             height,
-            revealed_tiles: vec![false; (width * height) as usize],
-            visible_tiles: vec![false; (width * height) as usize],
+            revealed_tiles: vec![false; area],
+            visible_tiles: vec![false; area],
+            blocked: vec![false; area],
+            tile_content: vec![Vec::new(); area],
         }
     }
 }
@@ -114,20 +141,26 @@ impl BaseMap for Map {
         let mut available_exits: Vec::<(i32, f32)> = Vec::new();
         let pt = self.index_to_point2d(idx);
 
-        const INITIAL_COST: f32 = 1.0;
+        const CARDINAL_DISTANCE: f32 = 1.0;
+        const DIAGONAL_DISTANCE: f32 = 1.454;
         let deltas = [
-            (0, -1),
-            (0, 1),
-            (1, 0),
-            (-1, 0)];
+            (0, -1, CARDINAL_DISTANCE),
+            (0, 1, CARDINAL_DISTANCE),
+            (1, 0, CARDINAL_DISTANCE),
+            (-1, 0, CARDINAL_DISTANCE),
+            (1, -1, DIAGONAL_DISTANCE),
+            (1, 1, DIAGONAL_DISTANCE),
+            (-1, -1, DIAGONAL_DISTANCE),
+            (-1, 1, DIAGONAL_DISTANCE)];
 
         for delta in deltas.iter() {
-            let (delta_x, delta_y) = delta;
-            let new_x = pt.x + delta_x;
-            let new_y = pt.y + delta_y;
+            let
+                (delta_x, delta_y, delta_cost) = delta;
+            let new_x = pt.x + *delta_x;
+            let new_y = pt.y + *delta_y;
             if self.is_exit_valid(new_x, new_y) {
                 let idx = self.xy_idx(new_x, new_y) as i32;
-                available_exits.push((idx, INITIAL_COST));
+                available_exits.push((idx, *delta_cost));
             }
         }
 
