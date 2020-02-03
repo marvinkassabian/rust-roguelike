@@ -28,6 +28,8 @@ impl Map {
         ((y * self.width) + x) as usize
     }
 
+    pub fn count(&self) -> usize { (self.width * self.height) as usize }
+
     pub fn set(&mut self, x: i32, y: i32, tile: TileType) {
         let idx = self.xy_idx(x, y);
         self.tiles[idx] = tile;
@@ -58,11 +60,11 @@ impl Map {
 
     pub fn is_valid(&self, x: i32, y: i32) -> bool {
         let idx = self.xy_idx(x, y);
-        self.is_valid_idx(idx)
+        self.is_valid_idx(idx) && x < self.width && y < self.height && x >= 0 && y >= 0
     }
 
     pub fn is_valid_idx(&self, idx: usize) -> bool {
-        idx < (self.width * self.height) as usize
+        idx < self.count()
     }
 
     pub fn is_visible(&self, x: i32, y: i32) -> bool {
@@ -101,16 +103,16 @@ impl Map {
     }
 
     pub fn new(width: i32, height: i32, tile_type: TileType) -> Map {
-        let area = (width * height) as usize;
+        let map_count = (width * height) as usize;
         Map {
-            tiles: vec![tile_type; area],
+            tiles: vec![tile_type; map_count],
             rooms: Vec::new(),
             width,
             height,
-            revealed_tiles: vec![false; area],
-            visible_tiles: vec![false; area],
-            blocked: vec![false; area],
-            tile_content: vec![Vec::new(); area],
+            revealed_tiles: vec![false; map_count],
+            visible_tiles: vec![false; map_count],
+            blocked: vec![false; map_count],
+            tile_content: vec![Vec::new(); map_count],
         }
     }
 }
@@ -178,9 +180,8 @@ impl BaseMap for Map {
 
 /// Makes a new map using the algorithm from http://rogueliketutorials.com/tutorials/tcod/part-3/
 /// This gives a handful of random rooms and corridors joining them together.
-pub fn new_map_rooms_and_corridors(width: i32, height: i32) -> Map {
+pub fn new_map_rooms_and_corridors(rng: &mut Random, width: i32, height: i32) -> Map {
     let mut map = Map::new(width, height, TileType::Wall);
-    let mut rng = Random::new();
 
     const MAX_ROOMS: i32 = 30;
     const MIN_SIZE: i32 = 6;
@@ -261,7 +262,7 @@ pub fn draw_map(ecs: &World, ctx: &mut Rltk) {
                 }
                 TileType::Wall => {
                     fg = RGB::from_f32(0.0, 1.0, 0.0);
-                    glyph = rltk::to_cp437('#');
+                    glyph = rltk::to_cp437(get_wall_glyph(&map, pt.x, pt.y));
                 }
             }
 
@@ -272,4 +273,59 @@ pub fn draw_map(ecs: &World, ctx: &mut Rltk) {
             ctx.set(pt.x, pt.y, fg, bg, glyph);
         }
     }
+}
+
+fn get_wall_glyph(map: &Map, x: i32, y: i32) -> char {
+    if !map.is_valid(x, y) {
+        return '#';
+    }
+
+    let deltas = [
+        (x, y - 1, 1),
+        (x, y + 1, 2),
+        (x - 1, y, 4),
+        (x + 1, y, 8),
+    ];
+
+    let mut mask: u8 = 0;
+
+    for (delta_x, delta_y, flag) in deltas.iter() {
+        if map.is_valid(*delta_x, *delta_y) && is_revealed_wall(map, *delta_x, *delta_y) {
+            mask += *flag;
+        }
+    }
+
+    match mask {
+        0 => { '•' } // Pillar because we can't see neighbors
+        1 => { '║' } // Wall only to the north
+        2 => { '║' } // Wall only to the south
+        3 => { '║' } // Wall to the north and south
+        4 => { '═' } // Wall only to the west
+        5 => { '╝' } // Wall to the north and west
+        6 => { '╗' } // Wall to the south and west
+        7 => { '╣' } // Wall to the north, south and west
+        8 => { '═' } // Wall only to the east
+        9 => { '╚' } // Wall to the north and east
+        10 => { '╔' } // Wall to the south and east
+        11 => { '╠' } // Wall to the north, south and east
+        12 => { '═' } // Wall to the east and west
+        13 => { '╩' } // Wall to the east, west, and south
+        14 => { '╦' } // Wall to the east, west, and north
+        15 => { '╬' } //Wall to the north, south, east, and west
+        _ => { '#' } // We missed one?
+    }
+}
+
+fn is_revealed_wall(map: &Map, x: i32, y: i32) -> bool {
+    let idx = map.xy_idx(x, y);
+
+    if map.tiles[idx] != TileType::Wall {
+        return false;
+    }
+
+    if !map.revealed_tiles[idx] {
+        return false;
+    }
+
+    return true;
 }

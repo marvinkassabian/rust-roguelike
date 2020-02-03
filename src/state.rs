@@ -1,38 +1,50 @@
-use rltk::{Console, console, GameState, Rltk};
+use rltk::{Console, GameState, Rltk};
 use specs::prelude::*;
 use specs::WorldExt;
 
-use crate::{
-    draw_map,
-    Map,
-    MapIndexingSystem,
-    MonsterAI,
-    player_input,
-    Position,
-    Renderable,
-    VisibilitySystem};
+use crate::{DamageSystem, delete_the_dead, draw_map, draw_ui, Map, MapIndexingSystem, MeleeCombatSystem, MonsterAI, player_input, Position, Renderable, VisibilitySystem};
 
 #[derive(PartialEq, Copy, Clone)]
-pub enum RunState { Paused, Running }
+pub enum RunState { AwaitingInput, PreRun, PlayerTurn, MonsterTurn }
 
 pub struct State {
     pub ecs: World,
-    pub run_state: RunState,
 }
 
 impl GameState for State {
     fn tick(&mut self, ctx: &mut Rltk) {
         ctx.cls();
 
-        match self.run_state {
-            RunState::Paused => {
-                self.run_state = player_input(self, ctx);
-            }
-            RunState::Running => {
+        let mut new_run_state;
+        {
+            let run_state = self.ecs.fetch::<RunState>();
+            new_run_state = *run_state;
+        }
+
+        match new_run_state {
+            RunState::PreRun => {
                 self.run_systems();
-                self.run_state = RunState::Paused;
+                new_run_state = RunState::AwaitingInput;
+            }
+            RunState::AwaitingInput => {
+                new_run_state = player_input(self, ctx);
+            }
+            RunState::PlayerTurn => {
+                self.run_systems();
+                new_run_state = RunState::MonsterTurn;
+            }
+            RunState::MonsterTurn => {
+                self.run_systems();
+                new_run_state = RunState::AwaitingInput;
             }
         }
+
+        {
+            let mut run_writer = self.ecs.write_resource::<RunState>();
+            *run_writer = new_run_state;
+        }
+
+        delete_the_dead(&mut self.ecs);
 
         draw_map(&self.ecs, ctx);
 
@@ -45,13 +57,13 @@ impl GameState for State {
                 ctx.set(pos.x, pos.y, render.fg, render.bg, render.glyph);
             }
         }
+
+        draw_ui(&self.ecs, ctx);
     }
 }
 
 impl State {
     pub fn run_systems(&mut self) {
-        console::log("run_systems");
-
         let mut vis = VisibilitySystem {};
         vis.run_now(&self.ecs);
 
@@ -60,6 +72,12 @@ impl State {
 
         let mut map_index = MapIndexingSystem {};
         map_index.run_now(&self.ecs);
+
+        let mut melee_combat = MeleeCombatSystem {};
+        melee_combat.run_now(&self.ecs);
+
+        let mut damage = DamageSystem {};
+        damage.run_now(&self.ecs);
 
         self.ecs.maintain();
     }

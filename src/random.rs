@@ -18,10 +18,6 @@ impl Random {
         self.rng.range(min, max)
     }
 
-    pub fn inclusive_range(&mut self, min: i32, max: i32) -> i32 {
-        self.range(min, max + 1)
-    }
-
     fn get_rng() -> RandomNumberGenerator {
         if DEBUG {
             RandomNumberGenerator::seeded(DEBUG_SEED)
