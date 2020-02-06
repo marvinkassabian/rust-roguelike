@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate specs_derive;
 
-use rltk::{Point, Rltk};
+use rltk::Rltk;
 use specs::prelude::*;
 use specs::WorldExt;
 
@@ -43,7 +43,6 @@ fn main() {
         SHADER_PATH);
     context.with_post_scanlines(true);
 
-
     let mut gs = State { ecs: World::new() };
     gs.ecs.insert(RunState::PreRun);
     gs.ecs.insert(GameLog { entries: vec![format!("Welcome to {}", TITLE)] });
@@ -59,28 +58,12 @@ fn main() {
     gs.ecs.register::<CombatStats>();
     gs.ecs.register::<WantsToMelee>();
     gs.ecs.register::<SufferDamage>();
+    gs.ecs.register::<Item>();
+    gs.ecs.register::<Potion>();
 
-    let map: Map;
-    {
-        let mut rng = gs.ecs.write_resource::<Random>();
-        map = new_map_rooms_and_corridors(&mut rng, WINDOW_WIDTH, MAP_HEIGHT);
-    }
+    let map = new_map_rooms_and_corridors(&mut gs.ecs, WINDOW_WIDTH, MAP_HEIGHT);
 
-    let first_room = &(map.rooms).first();
-
-    if let Some(first_room) = first_room {
-        let pt = first_room.center();
-        gs.ecs.insert(Point::new(pt.x, pt.y));
-
-        let player = spawner::player(&mut gs.ecs, pt.x, pt.y);
-        gs.ecs.insert(player);
-    } else {
-        return;
-    }
-
-    for room in map.rooms.iter().skip(1) {
-        spawner::spawn_room(&mut gs.ecs, room);
-    }
+    spawner::spawn_map(&mut gs.ecs, &map);
 
     gs.ecs.insert(map);
 

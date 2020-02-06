@@ -180,7 +180,8 @@ impl BaseMap for Map {
 
 /// Makes a new map using the algorithm from http://rogueliketutorials.com/tutorials/tcod/part-3/
 /// This gives a handful of random rooms and corridors joining them together.
-pub fn new_map_rooms_and_corridors(rng: &mut Random, width: i32, height: i32) -> Map {
+pub fn new_map_rooms_and_corridors(ecs: &mut World, width: i32, height: i32) -> Map {
+    let mut rng = ecs.write_resource::<Random>();
     let mut map = Map::new(width, height, TileType::Wall);
 
     const MAX_ROOMS: i32 = 30;
