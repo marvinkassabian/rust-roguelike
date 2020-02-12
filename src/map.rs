@@ -3,7 +3,7 @@ use std::cmp::{max, min};
 use rltk::{Algorithm2D, BaseMap, Console, Point, RGB, Rltk};
 use specs::prelude::*;
 
-use crate::Random;
+use crate::{Random, RltkExt};
 use crate::Rect;
 
 #[derive(PartialEq, Copy, Clone)]
@@ -28,7 +28,9 @@ impl Map {
         ((y * self.width) + x) as usize
     }
 
-    pub fn count(&self) -> usize { (self.width * self.height) as usize }
+    pub fn count(&self) -> usize {
+        (self.width * self.height) as usize
+    }
 
     pub fn set(&mut self, x: i32, y: i32, tile: TileType) {
         let idx = self.xy_idx(x, y);
@@ -71,6 +73,12 @@ impl Map {
         let idx = self.xy_idx(x, y);
 
         self.visible_tiles[idx]
+    }
+
+    pub fn is_revealed(&self, x: i32, y: i32) -> bool {
+        let idx = self.xy_idx(x, y);
+
+        self.revealed_tiles[idx]
     }
 
     pub fn is_blocked(&self, x: i32, y: i32) -> bool {
@@ -243,35 +251,39 @@ pub fn new_map_rooms_and_corridors(ecs: &mut World, width: i32, height: i32) -> 
     map
 }
 
-pub fn draw_map(ecs: &World, ctx: &mut Rltk) {
+pub fn draw_map(ecs: &World, context: &mut Rltk) {
     let map = ecs.fetch::<Map>();
 
     for (idx, tile) in map.tiles.iter().enumerate() {
         let pt = map.index_to_point2d(idx as i32);
 
+        let mut glyph = rltk::to_cp437(' ');
+        let mut fg = RGB::from_f32(0., 0., 0.);
+        let mut bg = RGB::named(rltk::GREY26);
+
         if map.revealed_tiles[idx] {
-            let glyph;
-            let mut fg;
-            let bg = RGB::from_f32(0., 0., 0.);
-
-            let is_visible = map.visible_tiles[idx];
-
             match tile {
                 TileType::Floor => {
                     fg = RGB::from_f32(0.5, 1.0, 0.5);
-                    glyph = if is_visible { rltk::to_cp437('.') } else { rltk::to_cp437('+') };
+                    glyph = rltk::to_cp437('.')
                 }
                 TileType::Wall => {
                     fg = RGB::from_f32(0.0, 1.0, 0.0);
                     glyph = rltk::to_cp437(get_wall_glyph(&map, pt.x, pt.y));
                 }
             }
+        }
 
-            if !is_visible {
-                fg = fg.to_greyscale();
-            }
+        if !map.visible_tiles[idx] {
+            fg = fg.to_greyscale();
+        } else {
+            bg = RGB::named(rltk::BLACK);
+        }
 
-            ctx.set(pt.x, pt.y, fg, bg, glyph);
+        if *tile == TileType::Wall {
+            context.layered_set(pt.x, pt.y, fg, bg, glyph, 4, true);
+        } else {
+            context.set(pt.x, pt.y, fg, bg, glyph);
         }
     }
 }

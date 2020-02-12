@@ -34,7 +34,7 @@ impl<'a> System<'a> for ItemCollectionSystem {
 
             if pick_up.collected_by == *player_entity {
                 let item_name = &names.get(pick_up.item).unwrap().name;
-                game_log.entries.insert(0, format!("You picked up {}!", item_name));
+                game_log.add(format!("You picked up {}!", item_name));
             }
         }
 

@@ -2,11 +2,11 @@ use rltk::{Algorithm2D, Point, RGB};
 use specs::{Entity, World};
 use specs::prelude::*;
 
-use crate::{BlocksTile, CombatStats, Item, Map, Monster, Name, Player, Position, Potion, Random, Rect, Renderable, Viewshed};
+use crate::{AreaOfEffect, BlocksTile, CombatStats, Confusion, Consumable, InBackpack, InflictsDamage, Item, Map, Monster, Name, Player, Position, ProvidesHealing, Random, Ranged, Rect, Renderable, Viewshed};
 
 const MAX_MONSTERS: i32 = 4;
 const MAX_ITEMS: i32 = 2;
-const SPAWN_OFFSET: i32 = 2;
+const DROP_OFFSET: i32 = 3;
 
 pub fn player(ecs: &mut World, x: i32, y: i32) -> Entity {
     ecs
@@ -16,6 +16,7 @@ pub fn player(ecs: &mut World, x: i32, y: i32) -> Entity {
             glyph: rltk::to_cp437('@'),
             fg: RGB::named(rltk::YELLOW),
             bg: RGB::named(rltk::BLACK),
+            render_order: 0,
         })
         .with(Player {})
         .with(Viewshed {
@@ -51,7 +52,6 @@ pub fn orc(ecs: &mut World, x: i32, y: i32) {
     monster(ecs, x, y, rltk::to_cp437('o'), "Orc")
 }
 
-
 pub fn goblin(ecs: &mut World, x: i32, y: i32) {
     monster(ecs, x, y, rltk::to_cp437('g'), "Goblin")
 }
@@ -64,6 +64,7 @@ fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: u8, name: S) {
             glyph,
             fg: RGB::named(rltk::RED),
             bg: RGB::named(rltk::BLACK),
+            render_order: 1,
         })
         .with(Monster {})
         .with(Viewshed {
@@ -82,6 +83,20 @@ fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: u8, name: S) {
         .build();
 }
 
+pub fn random_item(ecs: &mut World, x: i32, y: i32) {
+    let roll: i32;
+    {
+        let mut rng = ecs.write_resource::<Random>();
+        roll = rng.roll_die(4);
+    }
+    match roll {
+        1 => { health_potion(ecs, x, y) }
+        2 => { fireball_scroll(ecs, x, y) }
+        3 => { confusion_scroll(ecs, x, y) }
+        _ => { magic_missile_scroll(ecs, x, y) }
+    }
+}
+
 pub fn health_potion(ecs: &mut World, x: i32, y: i32) {
     ecs
         .create_entity()
@@ -90,13 +105,81 @@ pub fn health_potion(ecs: &mut World, x: i32, y: i32) {
             glyph: rltk::to_cp437('¡'),
             fg: RGB::named(rltk::MAGENTA),
             bg: RGB::named(rltk::BLACK),
+            render_order: 2,
         })
         .with(Name { name: "Health Potion".to_string() })
         .with(Item {})
-        .with(Potion {
+        .with(Consumable {})
+        .with(ProvidesHealing {
             heal_amount: 8
         })
         .build();
+}
+
+pub fn magic_missile_scroll(ecs: &mut World, x: i32, y: i32) {
+    ecs
+        .create_entity()
+        .with(Position { x, y })
+        .with(Renderable {
+            glyph: rltk::to_cp437(')'),
+            fg: RGB::named(rltk::CYAN),
+            bg: RGB::named(rltk::BLACK),
+            render_order: 2,
+        })
+        .with(Name { name: "Magic Missile Scroll".to_string() })
+        .with(Item {})
+        .with(Consumable {})
+        .with(Ranged { range: 6 })
+        .with(InflictsDamage { damage: 8 })
+        .build();
+}
+
+pub fn fireball_scroll(ecs: &mut World, x: i32, y: i32) {
+    fireball_scroll_base(ecs)
+        .with(Position { x, y })
+        .build();
+}
+
+fn confusion_scroll(ecs: &mut World, x: i32, y: i32) {
+    ecs.create_entity()
+        .with(Position { x, y })
+        .with(Renderable {
+            glyph: rltk::to_cp437(')'),
+            fg: RGB::named(rltk::PINK),
+            bg: RGB::named(rltk::BLACK),
+            render_order: 2,
+        })
+        .with(Name { name: "Confusion Scroll".to_string() })
+        .with(Item {})
+        .with(Consumable {})
+        .with(Ranged { range: 6 })
+        .with(Confusion { turns: 4 })
+        .build();
+}
+
+fn fireball_scroll_in_pack(ecs: &mut World, owner: Entity) {
+    fireball_scroll_base(ecs)
+        .with(InBackpack {
+            owner,
+        })
+        .build();
+}
+
+fn fireball_scroll_base(ecs: &mut World) -> EntityBuilder {
+    ecs
+        .create_entity()
+        .with(Renderable {
+            glyph: rltk::to_cp437(')'),
+            fg: RGB::named(rltk::ORANGE),
+            bg: RGB::named(rltk::BLACK),
+            render_order: 2,
+        })
+        .with(Name { name: "Fireball Scroll".to_string() })
+        .with(Item {})
+        .with(Consumable {})
+        .with(Ranged { range: 6 })
+        .with(InflictsDamage { damage: 20 })
+        .with(AreaOfEffect { radius: 3 })
 }
 
 pub fn spawn_map(ecs: &mut World, map: &Map) {
@@ -104,6 +187,11 @@ pub fn spawn_map(ecs: &mut World, map: &Map) {
 
     ecs.insert(Point::new(pt.x, pt.y));
     let player = player(ecs, pt.x, pt.y);
+
+    for _ in 0..5 {
+        fireball_scroll_in_pack(ecs, player);
+    }
+
     ecs.insert(player);
 
     let rooms = map.rooms.iter().skip(1);
@@ -117,8 +205,8 @@ fn spawn_room(ecs: &mut World, map: &Map, room: &Rect) {
     let item_spawn_points: Vec<usize>;
     {
         let mut rng = ecs.write_resource::<Random>();
-        let monster_count = rng.range(0, MAX_MONSTERS) - SPAWN_OFFSET;
-        let item_count = rng.range(0, MAX_ITEMS) - SPAWN_OFFSET;
+        let monster_count = rng.inclusive_range(0, MAX_MONSTERS + DROP_OFFSET) - DROP_OFFSET;
+        let item_count = rng.inclusive_range(0, MAX_ITEMS + DROP_OFFSET) - DROP_OFFSET;
 
         monster_spawn_points = get_spawn_points(map, &mut rng, monster_count, room);
         item_spawn_points = get_spawn_points(map, &mut rng, item_count, room);
@@ -131,7 +219,7 @@ fn spawn_room(ecs: &mut World, map: &Map, room: &Rect) {
 
     for idx in item_spawn_points {
         let pt = map.index_to_point2d(idx as i32);
-        health_potion(ecs, pt.x, pt.y);
+        random_item(ecs, pt.x, pt.y);
     }
 }
 

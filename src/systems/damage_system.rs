@@ -2,14 +2,14 @@ extern crate specs;
 
 use specs::prelude::*;
 
-use crate::{CombatStats, GameLog, Name, Player, SufferDamage};
+use crate::{CombatStats, GameLog, Name, Player, RunState, SuffersDamage};
 
 pub struct DamageSystem {}
 
 impl<'a> System<'a> for DamageSystem {
     type SystemData = (
         WriteStorage<'a, CombatStats>,
-        WriteStorage<'a, SufferDamage>,
+        WriteStorage<'a, SuffersDamage>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -25,6 +25,12 @@ impl<'a> System<'a> for DamageSystem {
 
 
 pub fn delete_the_dead(ecs: &mut World) {
+    let run_state = *ecs.fetch::<RunState>();
+
+    if !run_state.is_turn() {
+        return;
+    }
+
     let mut dead: Vec<Entity> = Vec::new();
 
     {
@@ -42,11 +48,13 @@ pub fn delete_the_dead(ecs: &mut World) {
                     None => {
                         let victim_name = names.get(entity);
                         if let Some(victim_name) = victim_name {
-                            game_log.entries.insert(0, format!("{} is dead", victim_name.name));
+                            game_log.add(format!("{} is dead", victim_name.name));
                         }
                         dead.push(entity);
                     }
-                    Some(_player) => game_log.entries.insert(0, "You are dead".to_string()),
+                    Some(_player) => {
+                        game_log.add("You are dead".to_string());
+                    }
                 }
             }
         }

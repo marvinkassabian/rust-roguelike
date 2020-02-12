@@ -18,6 +18,10 @@ impl Random {
         self.rng.range(min, max)
     }
 
+    pub fn inclusive_range(&mut self, min: i32, max: i32) -> i32 {
+        self.range(min, max + 1)
+    }
+
     fn get_rng() -> RandomNumberGenerator {
         if DEBUG {
             RandomNumberGenerator::seeded(DEBUG_SEED)
@@ -37,5 +41,9 @@ impl Random {
 
     pub fn flip_coin(&mut self) -> bool {
         self.range(0, 2) == 1
+    }
+
+    pub fn roll_die(&mut self, die_type: i32) -> i32 {
+        self.rng.roll_dice(1, die_type)
     }
 }

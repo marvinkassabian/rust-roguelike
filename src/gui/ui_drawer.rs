@@ -2,38 +2,38 @@ extern crate rltk;
 
 use specs::prelude::*;
 
-use crate::{CombatStats, GameLog, Map, MAP_HEIGHT, Name, Player, Position, WINDOW_HEIGHT, WINDOW_WIDTH};
+use crate::{CombatStats, CONSOLE_INDEX, GameLog, Map, MAP_HEIGHT, Name, Player, Position, WINDOW_HEIGHT, WINDOW_WIDTH};
 
 use self::rltk::{Console, Point, RGB, Rltk};
 
 pub fn draw_ui(ecs: &World, ctx: &mut Rltk) {
-    let mut drawer = UiDrawer {
+    UiDrawer {
         ecs,
         ctx,
-    };
-
-    drawer.draw_ui();
+    }.draw_ui()
 }
 
 const HEALTH_TEXT_OFFSET: i32 = 12;
 const HEALTH_BAR_START: i32 = 28;
 const LOG_ENTRY_OFFSET: i32 = 2;
 
-pub struct UiDrawer<'a> {
+struct UiDrawer<'a> {
     ecs: &'a World,
     ctx: &'a mut Rltk,
 }
 
 impl<'a> UiDrawer<'a> {
     pub fn draw_ui(&mut self) {
-        self.draw_gui_frame();
+        self.draw_game_log_frame();
         self.draw_health();
         self.draw_logs();
         self.draw_mouse_cursor();
+        self.ctx.set_active_console(CONSOLE_INDEX.ui);
         self.draw_tooltip();
+        self.ctx.set_active_console(CONSOLE_INDEX.base);
     }
 
-    fn draw_gui_frame(&mut self) {
+    fn draw_game_log_frame(&mut self) {
         self.ctx.draw_box(
             0,
             MAP_HEIGHT,
@@ -71,15 +71,15 @@ impl<'a> UiDrawer<'a> {
     fn draw_logs(&mut self) {
         let log = self.ecs.fetch::<GameLog>();
 
-        let mut y = MAP_HEIGHT + 1;
-        for entry in log.entries.iter() {
-            if y < WINDOW_HEIGHT - 1 {
-                self.ctx.print(LOG_ENTRY_OFFSET, y, entry);
+        let mut y = WINDOW_HEIGHT - 2;
+        for entry in log.entries.iter().skip(log.display_index as usize) {
+            if y >= MAP_HEIGHT + 1 {
+                self.ctx.print(LOG_ENTRY_OFFSET, y, &entry.get_formatted_message());
             } else {
                 break;
             }
 
-            y += 1;
+            y -= 1;
         }
     }
 
@@ -112,55 +112,38 @@ impl<'a> UiDrawer<'a> {
 
         let max_width = tooltip.iter().map(|s| s.len()).max().unwrap() as i32;
 
-        let width = max_width + 3;
+        let fg: RGB = RGB::named(rltk::WHITE);
+        let bg: RGB = RGB::named(rltk::DARK_GREY);
+
+        let width = max_width;
 
         let arrow_pos: Point;
-        let arrow_text: &str;
+        let arrow_text: &str = "-";
+        let arrow_length = arrow_text.len() as i32;
         let left_x: i32;
-        let x_offset: i32;
-        let x_direction: i32;
 
         let print_left_of_mouse = mouse_x > map.width / 2;
 
         if print_left_of_mouse {
-            arrow_pos = Point::new(mouse_x - 2, mouse_y);
-            arrow_text = "->";
-            left_x = mouse_x - width;
-            x_offset = 0;
-            x_direction = -1;
+            arrow_pos = Point::new(mouse_x - 1, mouse_y);
+            left_x = mouse_x - width - arrow_length;
         } else {
             arrow_pos = Point::new(mouse_x + 1, mouse_y);
-            arrow_text = "<-";
-            left_x = mouse_x + 3;
-            x_offset = 1;
-            x_direction = 1;
+            left_x = mouse_x + 2;
         }
 
         let mut y = mouse_y;
-        for s in tooltip.iter() {
-            self.ctx.print_color(
-                left_x + x_offset,
-                y,
-                RGB::named(rltk::WHITE),
-                RGB::named(rltk::GREY),
-                s);
-            let padding = (width - s.len() as i32) - 1;
+        for entity_name in tooltip.iter() {
+            self.ctx.print_color(left_x, y, fg, bg, entity_name);
+            let name_length = entity_name.len() as i32;
+            let padding = width - name_length as i32;
+
             for i in 0..padding {
-                self.ctx.print_color(
-                    arrow_pos.x + x_offset + x_direction * i,
-                    y,
-                    RGB::named(rltk::WHITE),
-                    RGB::named(rltk::GREY),
-                    &" ".to_string());
+                self.ctx.print_color(left_x + name_length + i, y, fg, bg, &" ".to_string());
             }
             y += 1;
         }
 
-        self.ctx.print_color(
-            arrow_pos.x,
-            arrow_pos.y,
-            RGB::named(rltk::WHITE),
-            RGB::named(rltk::GREY),
-            &arrow_text.to_string());
+        self.ctx.print_color(arrow_pos.x, arrow_pos.y, fg, bg, &arrow_text.to_string());
     }
 }

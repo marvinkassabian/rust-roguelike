@@ -3,9 +3,52 @@ use std::cmp::{max, min};
 use rltk::{console, Point, Rltk, VirtualKeyCode};
 use specs::prelude::*;
 
-use crate::{Map, RunState, WantsToMelee};
+use crate::{GameLog, Item, Map, RunState, WantsToMelee, WantsToPickUp};
 
 use super::{CombatStats, Player, Position, State, Viewshed};
+
+pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
+    match ctx.key {
+        None => { return RunState::AwaitingInput; }
+        Some(key) => match key {
+            VirtualKeyCode::Left |
+            VirtualKeyCode::H => try_move_player(-1, 0, &mut gs.ecs),
+
+            VirtualKeyCode::Right |
+            VirtualKeyCode::L => try_move_player(1, 0, &mut gs.ecs),
+
+            VirtualKeyCode::Up |
+            VirtualKeyCode::J => try_move_player(0, -1, &mut gs.ecs),
+
+            VirtualKeyCode::Down |
+            VirtualKeyCode::K => try_move_player(0, 1, &mut gs.ecs),
+
+            VirtualKeyCode::Y => try_move_player(-1, -1, &mut gs.ecs),
+
+            VirtualKeyCode::U => try_move_player(1, -1, &mut gs.ecs),
+
+            VirtualKeyCode::N => try_move_player(1, 1, &mut gs.ecs),
+
+            VirtualKeyCode::B => try_move_player(-1, 1, &mut gs.ecs),
+
+            VirtualKeyCode::G => get_item(&mut gs.ecs),
+            VirtualKeyCode::I => return RunState::ShowInventory,
+            VirtualKeyCode::D => return RunState::ShowDropItem,
+            VirtualKeyCode::PageUp => {
+                try_scroll_game_log(&mut gs.ecs, 1);
+                return RunState::AwaitingInput;
+            }
+            VirtualKeyCode::PageDown => {
+                try_scroll_game_log(&mut gs.ecs, -1);
+                return RunState::AwaitingInput;
+            }
+            _ => return RunState::AwaitingInput,
+        },
+    }
+
+    RunState::PlayerTurn
+}
+
 
 pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut positions = ecs.write_storage::<Position>();
@@ -33,7 +76,8 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
         for potential_target in potential_targets.iter() {
             let potential_target = *potential_target;
             let target_or_none = combat_stats.get(potential_target);
-            if let Some(_target) = target_or_none {
+            let is_target = target_or_none.is_some();
+            if is_target {
                 wants_to_melee
                     .insert(
                         entity,
@@ -56,32 +100,38 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     }
 }
 
-pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
-    match ctx.key {
-        None => { return RunState::AwaitingInput; }
-        Some(key) => match key {
-            VirtualKeyCode::Left |
-            VirtualKeyCode::H => try_move_player(-1, 0, &mut gs.ecs),
 
-            VirtualKeyCode::Right |
-            VirtualKeyCode::L => try_move_player(1, 0, &mut gs.ecs),
+fn try_scroll_game_log(ecs: &mut World, delta: i32) {
+    let mut game_log = ecs.write_resource::<GameLog>();
 
-            VirtualKeyCode::Up |
-            VirtualKeyCode::J => try_move_player(0, -1, &mut gs.ecs),
+    game_log.move_index(delta);
+}
 
-            VirtualKeyCode::Down |
-            VirtualKeyCode::K => try_move_player(0, 1, &mut gs.ecs),
+fn get_item(ecs: &mut World) {
+    let player_position = ecs.fetch::<Point>();
+    let player_entity = ecs.fetch::<Entity>();
+    let entities = ecs.entities();
+    let items = ecs.read_storage::<Item>();
+    let positions = ecs.read_storage::<Position>();
 
-            VirtualKeyCode::Y => try_move_player(-1, -1, &mut gs.ecs),
-
-            VirtualKeyCode::U => try_move_player(1, -1, &mut gs.ecs),
-
-            VirtualKeyCode::N => try_move_player(1, 1, &mut gs.ecs),
-
-            VirtualKeyCode::B => try_move_player(-1, 1, &mut gs.ecs),
-            _ => { return RunState::AwaitingInput; }
-        },
+    let mut picked_up_item_or_none: Option<Entity> = None;
+    for (_item, entity, position) in (&items, &entities, &positions).join() {
+        if position.x == player_position.x && position.y == player_position.y {
+            picked_up_item_or_none = Some(entity);
+            break;
+        }
     }
 
-    RunState::PlayerTurn
+    let mut game_log = ecs.fetch_mut::<GameLog>();
+
+    match picked_up_item_or_none {
+        None => game_log.add("There is nothing to pick up.".to_string()),
+        Some(entity) => {
+            let mut wants_to_pick_up = ecs.write_storage::<WantsToPickUp>();
+            wants_to_pick_up.insert(entity, WantsToPickUp {
+                collected_by: *player_entity,
+                item: entity,
+            }).expect("Unable to insert WantsToPickUp");
+        }
+    }
 }

@@ -2,7 +2,7 @@ extern crate specs;
 
 use specs::prelude::*;
 
-use crate::{CombatStats, GameLog, Name, SufferDamage, WantsToMelee};
+use crate::{CombatStats, GameLog, Name, SuffersDamage, WantsToMelee};
 
 pub struct MeleeCombatSystem {}
 
@@ -13,7 +13,7 @@ impl<'a> System<'a> for MeleeCombatSystem {
         WriteStorage<'a, WantsToMelee>,
         ReadStorage<'a, Name>,
         ReadStorage<'a, CombatStats>,
-        WriteStorage<'a, SufferDamage>,
+        WriteStorage<'a, SuffersDamage>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -41,18 +41,18 @@ impl<'a> System<'a> for MeleeCombatSystem {
             let damage = i32::max(0, stats.power - target_stats.defense);
 
             if damage == 0 {
-                game_log.entries.insert(0, format!(
+                game_log.add(format!(
                     "{} is unable to hurt {}.",
                     &name.name,
                     &target_name.name));
             } else {
-                game_log.entries.insert(0, format!(
+                game_log.add(format!(
                     "{} hits {} for {} hp.",
                     &name.name,
                     &target_name.name,
                     damage));
                 suffers_damage
-                    .insert(wants_melee.target, SufferDamage { amount: damage })
+                    .insert(wants_melee.target, SuffersDamage { amount: damage })
                     .expect("Unable to do damage");
             }
         }

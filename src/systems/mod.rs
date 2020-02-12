@@ -1,5 +1,5 @@
 pub use damage_system::*;
-pub use inventory_system::*;
+pub use inventory::*;
 pub use map_indexing_system::*;
 pub use melee_combat_system::*;
 pub use monster_ai_system::*;
@@ -10,4 +10,4 @@ pub mod visibility_system;
 pub mod monster_ai_system;
 pub mod map_indexing_system;
 pub mod melee_combat_system;
-pub mod inventory_system;
+pub mod inventory;
