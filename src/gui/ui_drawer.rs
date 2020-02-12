@@ -36,8 +36,8 @@ impl<'a> UiDrawer<'a> {
     fn draw_game_log_frame(&mut self) {
         self.ctx.draw_box(
             0,
-            MAP_HEIGHT,
-            WINDOW_WIDTH - 1,
+            MAP_HEIGHT as i32,
+            (WINDOW_WIDTH - 1) as i32,
             WINDOW_HEIGHT - MAP_HEIGHT - 1,
             RGB::named(rltk::WHITE),
             RGB::named(rltk::BLACK));

@@ -5,6 +5,7 @@ use specs::prelude::*;
 use specs::WorldExt;
 
 pub use components::*;
+pub use context_builder::*;
 pub use game_log::*;
 pub use gui::*;
 pub use map::*;
@@ -28,11 +29,12 @@ mod random;
 mod spawner;
 mod gui;
 mod game_log;
+mod context_builder;
 
-pub const MAP_WIDTH: u32 = 80;
-pub const MAP_HEIGHT: u32 = 43;
-pub const WINDOW_WIDTH: u32 = 80;
-pub const WINDOW_HEIGHT: u32 = 50;
+pub const MAP_WIDTH: i32 = 80;
+pub const MAP_HEIGHT: i32 = 43;
+pub const WINDOW_WIDTH: i32 = 80;
+pub const WINDOW_HEIGHT: i32 = 50;
 
 const TITLE: &str = "Goblin War Party";
 
@@ -70,6 +72,6 @@ fn main() {
 
     gs.ecs.insert(map);
 
-    let context = init_context();
+    let context = build_context(WINDOW_WIDTH, WINDOW_HEIGHT, TITLE);
     rltk::main_loop(context, gs);
 }

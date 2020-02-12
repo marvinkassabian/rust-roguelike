@@ -2,7 +2,7 @@ use rltk::{GameState, Rltk};
 use specs::prelude::*;
 use specs::WorldExt;
 
-use crate::{AreaOfEffect, CONSOLE_INDEX, damage_system, DamageSystem, gui, ItemCollectionSystem, ItemDropSystem, ItemMenuResult, ItemUseSystem, Map, map, MapIndexingSystem, MeleeCombatSystem, MonsterAI, player, Position, Ranged, RangedTargetDrawerSettings, RangedTargetResult, Renderable, RltkExt, VisibilitySystem, WantsToDrop, WantsToUseItem};
+use crate::{AreaOfEffect, damage_system, DamageSystem, gui, ItemCollectionSystem, ItemDropSystem, ItemMenuResult, ItemUseSystem, Map, map, MapIndexingSystem, MeleeCombatSystem, MonsterAI, player, Position, Ranged, RangedTargetDrawerSettings, RangedTargetResult, Renderable, RltkExt, VisibilitySystem, WantsToDrop, WantsToUseItem};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState {
@@ -188,7 +188,4 @@ fn draw_entities(ecs: &World, context: &mut Rltk) {
             context.layered_set(pos.x, pos.y, render.fg, render.bg, render.glyph, 2, false);
         }
     }
-
-
-    context.set_active_console(CONSOLE_INDEX.base);
 }

@@ -61,7 +61,7 @@ impl<'a> ItemMenuDrawer<'a> {
         let plain_fg = RGB::named(rltk::WHITE);
 
         const INVENTORY_WIDTH: i32 = 31;
-        const INVENTORY_X: i32 = MAP_WIDTH / 2 - (INVENTORY_WIDTH / 2) as i32;
+        const INVENTORY_X: i32 = MAP_WIDTH as i32 / 2 - (INVENTORY_WIDTH / 2);
         const BORDER_TEXT_OFFSET: i32 = 3;
 
         self.context.draw_box(
