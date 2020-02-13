@@ -1,16 +1,19 @@
 use std::string::ToString;
 
-use rltk::{Console, console, Rltk, SimpleConsole, SparseConsole};
+use rltk::{Console, console, InitHints, Rltk, SimpleConsole, SparseConsole};
 
-use crate::{CONSOLE_INDEX, LAYER_COUNT, TITLE};
+use crate::{CONSOLE_INDEX, LAYER_COUNT, RltkExt, TITLE};
 
-const LAYER_OFFSET_X: f32 = 0.06;
-const LAYER_OFFSET_Y: f32 = 0.12;
+const LAYER_OFFSET_X: f32 = 0.15;
+const LAYER_OFFSET_Y: f32 = 0.28;
 const LAYER_STATIC_OFFSET_X: f32 = 0.;
 const LAYER_STATIC_OFFSET_Y: f32 = 0.;
 const SHADER_PATH: &str = "resources";
-const TILE_WIDTH: u32 = 16;
-const TILE_HEIGHT: u32 = 16;
+const TILE_WIDTH: u32 = 8 * SCREEN_MULTIPLIER;
+const TILE_HEIGHT: u32 = 8 * SCREEN_MULTIPLIER;
+
+const SCREEN_MULTIPLIER: u32 = 1;
+const SCALE_STEP: u32 = 2;
 
 pub struct ContextBuilder<'a> {
     pub width: u32,
@@ -26,25 +29,29 @@ pub fn build_context(width: i32, height: i32, title: &str) -> Rltk {
     }.create_context()
 }
 
+const USE_DEPTH: bool = false;
+
 impl<'a> ContextBuilder<'a> {
     pub fn create_context(&self) -> Rltk {
-        let mut context = Rltk::init_raw(self.width * TILE_WIDTH, self.height * TILE_HEIGHT, TITLE);
+        let mut context = Rltk::init_raw(self.width * TILE_WIDTH, self.height * TILE_HEIGHT, TITLE, InitHints::new());
 
-        let mut p_w = TILE_WIDTH;
-        let mut p_h = TILE_HEIGHT;
+        let mut tile_width = TILE_WIDTH;
+        let mut tile_height = TILE_HEIGHT;
 
         let base_console_index = self.add_console(
             &mut context,
             AddConsoleParameter {
                 has_bg: true,
-                tile_width: Some(p_w),
-                tile_height: Some(p_h),
+                tile_width: Some(tile_width),
+                tile_height: Some(tile_height),
                 ..Default::default()
             },
         );
 
-        p_w += 1;
-        p_h += 1;
+        if USE_DEPTH {
+            tile_width += SCALE_STEP;
+            tile_height += SCALE_STEP;
+        }
 
         check_console_index(CONSOLE_INDEX.base, base_console_index);
 
@@ -57,14 +64,16 @@ impl<'a> ContextBuilder<'a> {
                     offset_x: LAYER_STATIC_OFFSET_X + LAYER_OFFSET_X * offset_multiplier,
                     offset_y: LAYER_STATIC_OFFSET_Y + LAYER_OFFSET_Y * offset_multiplier,
 
-                    tile_width: Some(p_w),
-                    tile_height: Some(p_h),
+                    tile_width: Some(tile_width),
+                    tile_height: Some(tile_height),
                     is_sparse: true,
                     ..Default::default()
                 });
 
-            p_w += 1;
-            p_h += 1;
+            if USE_DEPTH {
+                tile_width += SCALE_STEP;
+                tile_height += SCALE_STEP;
+            }
 
             check_console_index(CONSOLE_INDEX.layers[layer], layer_console_index);
         }
@@ -75,14 +84,15 @@ impl<'a> ContextBuilder<'a> {
                 is_sparse: true,
                 has_bg: true,
 
-                tile_width: Some(p_w),
-                tile_height: Some(p_h),
+                tile_width: Some(tile_width),
+                tile_height: Some(tile_height),
                 ..Default::default()
             });
 
         check_console_index(CONSOLE_INDEX.ui, ui_console_index);
 
-        context.set_active_console(CONSOLE_INDEX.base);
+        context.ext_set_target(CONSOLE_INDEX.base);
+
         context.with_post_scanlines(false);
 
         context
@@ -91,26 +101,36 @@ impl<'a> ContextBuilder<'a> {
     fn add_console(&self, context: &mut Rltk, params: AddConsoleParameter) -> usize {
         let tile_width = params.tile_width.unwrap_or(TILE_WIDTH);
         let tile_height = params.tile_width.unwrap_or(TILE_HEIGHT);
-        let w_ratio = tile_width as f32 / TILE_WIDTH as f32;
-        let h_ratio = tile_height as f32 / TILE_HEIGHT as f32;
+        let width_ratio = tile_width as f32 / TILE_WIDTH as f32;
+        let height_ratio = tile_height as f32 / TILE_HEIGHT as f32;
 
-        console::log(format!("{}, {}", tile_width, tile_height));
+        console::log(format!("tile_width: {}, tile_height: {}", tile_width, tile_height));
 
         let font_path = format!("{}/terminal8x8.png", &SHADER_PATH.to_string());
         let font = context.register_font(rltk::Font::load(font_path, (tile_width, tile_height)));
 
         let mut console: Box<dyn Console>;
 
-        let w = (self.width as f32 * w_ratio) as u32;
-        let h = (self.height as f32 * h_ratio) as u32;
+        let width = (self.width as f32 * width_ratio) as u32;
+        let height = (self.height as f32 * height_ratio) as u32;
 
         if params.is_sparse {
-            console = SparseConsole::init(w, h, &context.backend);
+            console = SparseConsole::init(width, height, &context.backend);
         } else {
-            console = SimpleConsole::init(w, h, &context.backend);
+            console = SimpleConsole::init(width, height, &context.backend);
         }
 
-        console.set_offset(params.offset_x, params.offset_y);
+        let mut offset_x = params.offset_x;
+        let mut offset_y = params.offset_y;
+
+        if USE_DEPTH {
+            offset_x += ((width - self.width) / 2) as f32;
+            offset_y -= ((height - self.height) / 2) as f32;
+        }
+
+        console::log(format!("offset_x: {}, offset_y: {}", offset_x, offset_y));
+
+        console.set_offset(offset_x, offset_y);
         if params.has_bg {
             context.register_console(console, font)
         } else {

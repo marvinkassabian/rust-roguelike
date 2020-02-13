@@ -7,39 +7,39 @@ use crate::{GameLog, Item, Map, RunState, WantsToMelee, WantsToPickUp};
 
 use super::{CombatStats, Player, Position, State, Viewshed};
 
-pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
-    match ctx.key {
+pub fn player_input(state: &mut State, context: &mut Rltk) -> RunState {
+    match context.key {
         None => { return RunState::AwaitingInput; }
         Some(key) => match key {
             VirtualKeyCode::Left |
-            VirtualKeyCode::H => try_move_player(-1, 0, &mut gs.ecs),
+            VirtualKeyCode::H => try_move_player(-1, 0, &mut state.ecs),
 
             VirtualKeyCode::Right |
-            VirtualKeyCode::L => try_move_player(1, 0, &mut gs.ecs),
+            VirtualKeyCode::L => try_move_player(1, 0, &mut state.ecs),
 
             VirtualKeyCode::Up |
-            VirtualKeyCode::J => try_move_player(0, -1, &mut gs.ecs),
+            VirtualKeyCode::J => try_move_player(0, -1, &mut state.ecs),
 
             VirtualKeyCode::Down |
-            VirtualKeyCode::K => try_move_player(0, 1, &mut gs.ecs),
+            VirtualKeyCode::K => try_move_player(0, 1, &mut state.ecs),
 
-            VirtualKeyCode::Y => try_move_player(-1, -1, &mut gs.ecs),
+            VirtualKeyCode::Y => try_move_player(-1, -1, &mut state.ecs),
 
-            VirtualKeyCode::U => try_move_player(1, -1, &mut gs.ecs),
+            VirtualKeyCode::U => try_move_player(1, -1, &mut state.ecs),
 
-            VirtualKeyCode::N => try_move_player(1, 1, &mut gs.ecs),
+            VirtualKeyCode::N => try_move_player(1, 1, &mut state.ecs),
 
-            VirtualKeyCode::B => try_move_player(-1, 1, &mut gs.ecs),
+            VirtualKeyCode::B => try_move_player(-1, 1, &mut state.ecs),
 
-            VirtualKeyCode::G => get_item(&mut gs.ecs),
+            VirtualKeyCode::G => get_item(&mut state.ecs),
             VirtualKeyCode::I => return RunState::ShowInventory,
             VirtualKeyCode::D => return RunState::ShowDropItem,
             VirtualKeyCode::PageUp => {
-                try_scroll_game_log(&mut gs.ecs, 1);
+                try_scroll_game_log(&mut state.ecs, 1);
                 return RunState::AwaitingInput;
             }
             VirtualKeyCode::PageDown => {
-                try_scroll_game_log(&mut gs.ecs, -1);
+                try_scroll_game_log(&mut state.ecs, -1);
                 return RunState::AwaitingInput;
             }
             _ => return RunState::AwaitingInput,

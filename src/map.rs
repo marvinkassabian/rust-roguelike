@@ -1,10 +1,9 @@
 use std::cmp::{max, min};
 
-use rltk::{Algorithm2D, BaseMap, Console, Point, RGB, Rltk};
+use rltk::{Algorithm2D, BaseMap, Point, Rect};
 use specs::prelude::*;
 
-use crate::{Random, RltkExt};
-use crate::Rect;
+use crate::Random;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum TileType {
@@ -126,14 +125,14 @@ impl Map {
 }
 
 impl Algorithm2D for Map {
-    fn point2d_to_index(&self, pt: Point) -> i32 {
-        pt.y * self.width + pt.x
+    fn point2d_to_index(&self, pt: Point) -> usize {
+        (pt.y * self.width + pt.x) as usize
     }
 
-    fn index_to_point2d(&self, idx: i32) -> Point {
+    fn index_to_point2d(&self, idx: usize) -> Point {
         Point {
-            x: idx % self.width,
-            y: idx / self.width,
+            x: idx as i32 % self.width,
+            y: idx as i32 / self.width,
         }
     }
 
@@ -143,12 +142,12 @@ impl Algorithm2D for Map {
 }
 
 impl BaseMap for Map {
-    fn is_opaque(&self, idx: i32) -> bool {
+    fn is_opaque(&self, idx: usize) -> bool {
         self.tiles[idx as usize] == TileType::Wall
     }
 
-    fn get_available_exits(&self, idx: i32) -> Vec<(i32, f32)> {
-        let mut available_exits: Vec::<(i32, f32)> = Vec::new();
+    fn get_available_exits(&self, idx: usize) -> Vec<(usize, f32)> {
+        let mut available_exits: Vec::<(usize, f32)> = Vec::new();
         let pt = self.index_to_point2d(idx);
 
         const CARDINAL_DISTANCE: f32 = 1.0;
@@ -169,7 +168,7 @@ impl BaseMap for Map {
             let new_x = pt.x + *delta_x;
             let new_y = pt.y + *delta_y;
             if self.is_exit_valid(new_x, new_y) {
-                let idx = self.xy_idx(new_x, new_y) as i32;
+                let idx = self.xy_idx(new_x, new_y);
                 available_exits.push((idx, *delta_cost));
             }
         }
@@ -177,7 +176,7 @@ impl BaseMap for Map {
         available_exits
     }
 
-    fn get_pathing_distance(&self, idx1: i32, idx2: i32) -> f32 {
+    fn get_pathing_distance(&self, idx1: usize, idx2: usize) -> f32 {
         let p1 = self.index_to_point2d(idx1);
         let p2 = self.index_to_point2d(idx2);
         let _distance = rltk::DistanceAlg::Pythagoras.distance2d(p1, p2);
@@ -202,7 +201,7 @@ pub fn new_map_rooms_and_corridors(ecs: &mut World, width: i32, height: i32) -> 
         let h = rng.range(MIN_SIZE, MAX_SIZE);
         let x = rng.range(FRAME_WIDTH, map.width - w - FRAME_WIDTH);
         let y = rng.range(FRAME_WIDTH, map.height - h - FRAME_WIDTH);
-        let new_room = Rect::new(x, y, w, h);
+        let new_room = Rect::with_size(x, y, w, h);
 
         let ok = map.rooms.iter().all(|other_room| !new_room.intersect(other_room));
 
@@ -249,96 +248,4 @@ pub fn new_map_rooms_and_corridors(ecs: &mut World, width: i32, height: i32) -> 
     }
 
     map
-}
-
-pub fn draw_map(ecs: &World, context: &mut Rltk) {
-    let map = ecs.fetch::<Map>();
-
-    for (idx, tile) in map.tiles.iter().enumerate() {
-        let pt = map.index_to_point2d(idx as i32);
-
-        let mut glyph = rltk::to_cp437(' ');
-        let mut fg = RGB::from_f32(0., 0., 0.);
-        let mut bg = RGB::named(rltk::GREY26);
-
-        if map.revealed_tiles[idx] {
-            match tile {
-                TileType::Floor => {
-                    fg = RGB::from_f32(0.5, 1.0, 0.5);
-                    glyph = rltk::to_cp437('.')
-                }
-                TileType::Wall => {
-                    fg = RGB::from_f32(0.0, 1.0, 0.0);
-                    glyph = rltk::to_cp437(get_wall_glyph(&map, pt.x, pt.y));
-                }
-            }
-        }
-
-        if !map.visible_tiles[idx] {
-            fg = fg.to_greyscale();
-        } else {
-            bg = RGB::named(rltk::BLACK);
-        }
-
-        if *tile == TileType::Wall {
-            context.layered_set(pt.x, pt.y, fg, bg, glyph, 4, true);
-        } else {
-            context.set(pt.x, pt.y, fg, bg, glyph);
-        }
-    }
-}
-
-fn get_wall_glyph(map: &Map, x: i32, y: i32) -> char {
-    if !map.is_valid(x, y) {
-        return '#';
-    }
-
-    let deltas = [
-        (x, y - 1, 1),
-        (x, y + 1, 2),
-        (x - 1, y, 4),
-        (x + 1, y, 8),
-    ];
-
-    let mut mask: u8 = 0;
-
-    for (delta_x, delta_y, flag) in deltas.iter() {
-        if map.is_valid(*delta_x, *delta_y) && is_revealed_wall(map, *delta_x, *delta_y) {
-            mask += *flag;
-        }
-    }
-
-    match mask {
-        0 => { '•' } // Pillar because we can't see neighbors
-        1 => { '║' } // Wall only to the north
-        2 => { '║' } // Wall only to the south
-        3 => { '║' } // Wall to the north and south
-        4 => { '═' } // Wall only to the west
-        5 => { '╝' } // Wall to the north and west
-        6 => { '╗' } // Wall to the south and west
-        7 => { '╣' } // Wall to the north, south and west
-        8 => { '═' } // Wall only to the east
-        9 => { '╚' } // Wall to the north and east
-        10 => { '╔' } // Wall to the south and east
-        11 => { '╠' } // Wall to the north, south and east
-        12 => { '═' } // Wall to the east and west
-        13 => { '╩' } // Wall to the east, west, and south
-        14 => { '╦' } // Wall to the east, west, and north
-        15 => { '╬' } //Wall to the north, south, east, and west
-        _ => { '#' } // We missed one?
-    }
-}
-
-fn is_revealed_wall(map: &Map, x: i32, y: i32) -> bool {
-    let idx = map.xy_idx(x, y);
-
-    if map.tiles[idx] != TileType::Wall {
-        return false;
-    }
-
-    if !map.revealed_tiles[idx] {
-        return false;
-    }
-
-    return true;
 }

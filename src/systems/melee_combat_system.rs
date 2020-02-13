@@ -4,7 +4,7 @@ use specs::prelude::*;
 
 use crate::{CombatStats, GameLog, Name, SuffersDamage, WantsToMelee};
 
-pub struct MeleeCombatSystem {}
+pub struct MeleeCombatSystem;
 
 impl<'a> System<'a> for MeleeCombatSystem {
     type SystemData = (

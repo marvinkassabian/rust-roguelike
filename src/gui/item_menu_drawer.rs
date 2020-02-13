@@ -2,27 +2,27 @@ extern crate rltk;
 
 use specs::prelude::*;
 
-use crate::{CONSOLE_INDEX, InBackpack, MAP_WIDTH, Name, State, WINDOW_HEIGHT};
+use crate::{CONSOLE_INDEX, InBackpack, MAP_WIDTH, Name, RltkExt, State, WINDOW_HEIGHT};
 
-use self::rltk::{Console, RGB, Rltk, VirtualKeyCode};
+use self::rltk::{ColorPair, Console, Point, Rect, RGB, Rltk, VirtualKeyCode};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum ItemMenuResult { Cancel, NoResponse, Selected(Entity) }
 
-pub fn show_inventory(gs: &mut State, ctx: &mut Rltk) -> ItemMenuResult {
+pub fn show_inventory(state: &mut State, context: &mut Rltk) -> ItemMenuResult {
     ItemMenuDrawer {
-        state: gs,
-        context: ctx,
+        state: state,
+        context: context,
         settings: ItemMenuDrawerSettings {
             title: "Inventory",
         },
     }.show_item_selection_menu()
 }
 
-pub fn show_drop_item_menu(gs: &mut State, ctx: &mut Rltk) -> ItemMenuResult {
+pub fn show_drop_item_menu(state: &mut State, context: &mut Rltk) -> ItemMenuResult {
     ItemMenuDrawer {
-        state: gs,
-        context: ctx,
+        state,
+        context,
         settings: ItemMenuDrawerSettings {
             title: "Drop which item?",
         },
@@ -41,7 +41,7 @@ struct ItemMenuDrawerSettings<'a> {
 
 impl<'a> ItemMenuDrawer<'a> {
     pub fn show_item_selection_menu(&mut self) -> ItemMenuResult {
-        self.context.set_active_console(CONSOLE_INDEX.ui);
+        self.context.ext_set_target(CONSOLE_INDEX.ui);
 
         let player_entity = self.state.ecs.fetch::<Entity>();
         let names = self.state.ecs.read_storage::<Name>();
@@ -64,27 +64,27 @@ impl<'a> ItemMenuDrawer<'a> {
         const INVENTORY_X: i32 = MAP_WIDTH as i32 / 2 - (INVENTORY_WIDTH / 2);
         const BORDER_TEXT_OFFSET: i32 = 3;
 
-        self.context.draw_box(
-            INVENTORY_X,
-            y - 2,
-            INVENTORY_WIDTH,
-            (inventory_count + 3) as i32,
-            plain_fg,
-            bg);
+        self.context.ext_draw_box(
+            Rect::with_size(INVENTORY_X, y - 2, INVENTORY_WIDTH, (inventory_count + 3) as i32),
+            ColorPair::new(plain_fg, bg));
 
-        self.context.print_color(
-            INVENTORY_X + BORDER_TEXT_OFFSET,
-            y - 2,
-            highlight_fg,
-            bg,
-            &self.settings.title);
+        self.context.ext_print_color(
+            Point::new(
+                INVENTORY_X + BORDER_TEXT_OFFSET,
+                y - 2),
+            &self.settings.title,
+            ColorPair::new(
+                highlight_fg,
+                bg));
 
-        self.context.print_color(
-            INVENTORY_X + BORDER_TEXT_OFFSET,
-            y + inventory_count as i32 + 1,
-            highlight_fg,
-            bg,
-            "ESCAPE to cancel");
+        self.context.ext_print_color(
+            Point::new(
+                INVENTORY_X + BORDER_TEXT_OFFSET,
+                y + inventory_count as i32 + 1),
+            "ESCAPE to cancel",
+            ColorPair::new(
+                highlight_fg,
+                bg));
 
         let inventory = (&names, &in_backpacks, &entities)
             .join()
@@ -100,14 +100,13 @@ impl<'a> ItemMenuDrawer<'a> {
             self.context.set(INVENTORY_X + 3, y, highlight_fg, bg, j);
             self.context.set(INVENTORY_X + 4, y, plain_fg, bg, rltk::to_cp437(')'));
 
-            self.context.print_color(INVENTORY_X + 6, y, plain_fg, bg, &name.name);
+            self.context.ext_print_color(Point::new(INVENTORY_X + 6, y), &name.name, ColorPair::new(plain_fg, bg));
 
             selectable_items.push(entity);
             y += 1;
             j += 1;
         }
-
-        self.context.set_active_console(CONSOLE_INDEX.base);
+        self.context.ext_set_target(CONSOLE_INDEX.base);
 
         match self.context.key {
             None => ItemMenuResult::NoResponse,

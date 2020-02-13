@@ -4,24 +4,24 @@ use std::string::ToString;
 
 use specs::prelude::*;
 
-use crate::{CONSOLE_INDEX, Map, Name, Position};
+use crate::{CONSOLE_INDEX, Map, Name, Position, RltkExt};
 
-use self::rltk::{Console, Point, RGB, Rltk};
+use self::rltk::{ColorPair, Point, RGB, Rltk};
 
 pub struct TooltipDrawer<'a> {
     pub ecs: &'a World,
-    pub ctx: &'a mut Rltk,
+    pub context: &'a mut Rltk,
 }
 
 pub enum TooltipOrientation { Left, Right, Auto }
 
 impl<'a> TooltipDrawer<'a> {
     pub fn draw_tooltip(&mut self, x: i32, y: i32, orientation: TooltipOrientation) {
-        self.ctx.set_active_console(CONSOLE_INDEX.ui);
+        self.context.ext_set_target(CONSOLE_INDEX.ui);
 
         self.draw_tooltip_internal(x, y, orientation);
 
-        self.ctx.set_active_console(CONSOLE_INDEX.base);
+        self.context.ext_set_target(CONSOLE_INDEX.base);
     }
 
     fn draw_tooltip_internal(&mut self, x: i32, y: i32, orientation: TooltipOrientation) {
@@ -72,16 +72,16 @@ impl<'a> TooltipDrawer<'a> {
 
         let mut y = y;
         for entity_name in tooltip.iter() {
-            self.ctx.print_color(left_x, y, fg, bg, entity_name);
+            self.context.ext_print_color(Point::new(left_x, y), entity_name, ColorPair::new(fg, bg));
             let name_length = entity_name.len() as i32;
             let padding = width - name_length as i32;
 
             for i in 0..padding {
-                self.ctx.print_color(left_x + name_length + i, y, fg, bg, &" ".to_string());
+                self.context.ext_print_color(Point::new(left_x + name_length + i, y), &" ".to_string(), ColorPair::new(fg, bg));
             }
             y += 1;
         }
 
-        self.ctx.print_color(arrow_pos.x, arrow_pos.y, fg, bg, &arrow_text.to_string());
+        self.context.ext_print_color(Point::new(arrow_pos.x, arrow_pos.y), &arrow_text.to_string(), ColorPair::new(fg, bg));
     }
 }

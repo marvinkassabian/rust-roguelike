@@ -8,7 +8,7 @@ use crate::{Map, Monster, Position, RunState, Viewshed, WantsToMelee};
 
 use self::rltk::Algorithm2D;
 
-pub struct MonsterAI {}
+pub struct MonsterAI;
 
 impl<'a> System<'a> for MonsterAI {
     type SystemData = (
@@ -53,7 +53,7 @@ impl<'a> System<'a> for MonsterAI {
                     target: *player_entity
                 }).expect("Unable to insert attack");
             } else if viewshed.visible_tiles.contains(&player_pos) {
-                let monster_idx = map.xy_idx(position.x, position.y) as i32;
+                let monster_idx = map.xy_idx(position.x, position.y);
 
                 let path = rltk::a_star_search(monster_idx, player_idx, map);
 

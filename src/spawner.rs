@@ -1,8 +1,8 @@
-use rltk::{Algorithm2D, Point, RGB};
+use rltk::{Algorithm2D, Point, Rect, RGB};
 use specs::{Entity, World};
 use specs::prelude::*;
 
-use crate::{AreaOfEffect, BlocksTile, CombatStats, Confusion, Consumable, InBackpack, InflictsDamage, Item, Map, Monster, Name, Player, Position, ProvidesHealing, Random, Ranged, Rect, Renderable, Viewshed};
+use crate::{AreaOfEffect, BlocksTile, CombatStats, Confusion, Consumable, InBackpack, InflictsDamage, Item, Map, Monster, Name, Player, Position, ProvidesHealing, Random, Ranged, Renderable, Viewshed};
 
 const MAX_MONSTERS: i32 = 4;
 const MAX_ITEMS: i32 = 2;
@@ -213,12 +213,12 @@ fn spawn_room(ecs: &mut World, map: &Map, room: &Rect) {
     }
 
     for idx in monster_spawn_points {
-        let pt = map.index_to_point2d(idx as i32);
+        let pt = map.index_to_point2d(idx);
         random_monster(ecs, pt.x, pt.y);
     }
 
     for idx in item_spawn_points {
-        let pt = map.index_to_point2d(idx as i32);
+        let pt = map.index_to_point2d(idx);
         random_item(ecs, pt.x, pt.y);
     }
 }

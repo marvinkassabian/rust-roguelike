@@ -3,7 +3,7 @@ use specs::prelude::*;
 
 use crate::{BlocksTile, Map, Position};
 
-pub struct MapIndexingSystem {}
+pub struct MapIndexingSystem;
 
 impl<'a> System<'a> for MapIndexingSystem {
     type SystemData = (

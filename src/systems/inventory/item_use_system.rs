@@ -7,7 +7,7 @@ use specs::prelude::*;
 
 use crate::{AreaOfEffect, CombatStats, Confusion, Consumable, GameLog, InflictsDamage, Map, Name, ProvidesHealing, SuffersDamage, WantsToUseItem};
 
-pub struct ItemUseSystem {}
+pub struct ItemUseSystem;
 
 impl<'a> System<'a> for ItemUseSystem {
     type SystemData = (

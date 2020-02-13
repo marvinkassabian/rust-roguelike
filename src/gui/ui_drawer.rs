@@ -2,14 +2,14 @@ extern crate rltk;
 
 use specs::prelude::*;
 
-use crate::{CombatStats, GameLog, MAP_HEIGHT, Player, TooltipDrawer, TooltipOrientation, WINDOW_HEIGHT, WINDOW_WIDTH};
+use crate::{CameraRenderer, CombatStats, GameLog, MAP_HEIGHT, Player, RltkExt, TooltipDrawer, TooltipOrientation, WINDOW_HEIGHT, WINDOW_WIDTH};
 
-use self::rltk::{Console, RGB, Rltk};
+use self::rltk::{ColorPair, Point, Rect, RGB, Rltk};
 
-pub fn draw_ui(ecs: &World, ctx: &mut Rltk) {
+pub fn draw_ui(ecs: &World, context: &mut Rltk) {
     UiDrawer {
         ecs,
-        ctx,
+        context,
     }.draw_ui()
 }
 
@@ -18,8 +18,8 @@ const HEALTH_BAR_START: i32 = 28;
 const LOG_ENTRY_OFFSET: i32 = 2;
 
 struct UiDrawer<'a> {
-    ecs: &'a World,
-    ctx: &'a mut Rltk,
+    pub ecs: &'a World,
+    pub context: &'a mut Rltk,
 }
 
 impl<'a> UiDrawer<'a> {
@@ -32,13 +32,15 @@ impl<'a> UiDrawer<'a> {
     }
 
     fn draw_game_log_frame(&mut self) {
-        self.ctx.draw_box(
-            0,
-            MAP_HEIGHT as i32,
-            (WINDOW_WIDTH - 1) as i32,
-            WINDOW_HEIGHT - MAP_HEIGHT - 1,
-            RGB::named(rltk::WHITE),
-            RGB::named(rltk::BLACK));
+        self.context.ext_draw_box(
+            Rect::with_size(
+                0,
+                MAP_HEIGHT as i32,
+                (WINDOW_WIDTH - 1) as i32,
+                WINDOW_HEIGHT - MAP_HEIGHT - 1),
+            ColorPair::new(
+                RGB::named(rltk::WHITE),
+                RGB::named(rltk::BLACK)));
     }
 
     fn draw_health(&mut self) {
@@ -48,21 +50,26 @@ impl<'a> UiDrawer<'a> {
         for (_player, stats) in (&players, &combat_stats).join() {
             let health = format!(" HP: {} / {} ", stats.hp, stats.max_hp);
 
-            self.ctx.print_color(
-                HEALTH_TEXT_OFFSET,
-                MAP_HEIGHT,
-                RGB::named(rltk::YELLOW),
-                RGB::named(rltk::BLACK),
-                &health);
+            self.context.ext_print_color(
+                Point::new(
+                    HEALTH_TEXT_OFFSET,
+                    MAP_HEIGHT),
+                &health,
+                ColorPair::new(
+                    RGB::named(rltk::YELLOW),
+                    RGB::named(rltk::BLACK)),
+            );
 
-            self.ctx.draw_bar_horizontal(
-                HEALTH_BAR_START,
-                MAP_HEIGHT,
+            self.context.ext_draw_bar_horizontal(
+                Point::new(
+                    HEALTH_BAR_START,
+                    MAP_HEIGHT),
                 WINDOW_WIDTH - HEALTH_BAR_START - 1,
                 stats.hp,
                 stats.max_hp,
-                RGB::named(rltk::RED),
-                RGB::named(rltk::BLACK));
+                ColorPair::new(
+                    RGB::named(rltk::RED),
+                    RGB::named(rltk::BLACK)));
         }
     }
 
@@ -72,7 +79,7 @@ impl<'a> UiDrawer<'a> {
         let mut y = WINDOW_HEIGHT - 2;
         for entry in log.entries.iter().skip(log.display_index as usize) {
             if y >= MAP_HEIGHT + 1 {
-                self.ctx.print(LOG_ENTRY_OFFSET, y, &entry.get_formatted_message());
+                self.context.ext_print(Point::new(LOG_ENTRY_OFFSET, y), &entry.get_formatted_message());
             } else {
                 break;
             }
@@ -82,16 +89,25 @@ impl<'a> UiDrawer<'a> {
     }
 
     fn draw_mouse_cursor(&mut self) {
-        let (mouse_x, mouse_y) = self.ctx.mouse_pos();
-        self.ctx.set_bg(mouse_x, mouse_y, RGB::named(rltk::MAGENTA));
+        let (min_x, _, min_y, _) = CameraRenderer {
+            ecs: self.ecs,
+            context: self.context,
+        }.get_screen_bounds();
+
+        //console::log(format!("min_x: {}, min_y: {}, active_console: {}", min_x, min_y, self.context.active_console));
+
+        //self.context.set_active_console(CONSOLE_INDEX.base);
+        let (mouse_x, mouse_y) = self.context.mouse_pos();
+        //console::log(format!("mouse_x: {}, mouse_y: {}", mouse_x, mouse_y));
+        self.context.ext_set_bg(Point::new(mouse_x + min_x, mouse_y + min_y), RGB::named(rltk::MAGENTA));
     }
 
     fn draw_tooltip(&mut self) {
-        let (mouse_x, mouse_y) = self.ctx.mouse_pos();
+        let (mouse_x, mouse_y) = self.context.mouse_pos();
 
         TooltipDrawer {
             ecs: self.ecs,
-            ctx: self.ctx,
+            context: self.context,
         }.draw_tooltip(mouse_x, mouse_y, TooltipOrientation::Auto)
     }
 }

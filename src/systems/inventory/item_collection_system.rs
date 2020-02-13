@@ -4,7 +4,7 @@ use specs::prelude::*;
 
 use crate::{GameLog, InBackpack, Name, Position, WantsToPickUp};
 
-pub struct ItemCollectionSystem {}
+pub struct ItemCollectionSystem;
 
 impl<'a> System<'a> for ItemCollectionSystem {
     type SystemData = (

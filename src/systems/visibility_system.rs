@@ -3,7 +3,7 @@ use specs::prelude::*;
 
 use crate::{Map, Player, Position, Viewshed};
 
-pub struct VisibilitySystem {}
+pub struct VisibilitySystem;
 
 impl<'a> System<'a> for VisibilitySystem {
     type SystemData = (

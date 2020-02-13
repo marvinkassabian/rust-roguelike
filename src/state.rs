@@ -1,8 +1,8 @@
-use rltk::{GameState, Rltk};
+use rltk::{GameState, render_draw_buffer, Rltk};
 use specs::prelude::*;
 use specs::WorldExt;
 
-use crate::{AreaOfEffect, damage_system, DamageSystem, gui, ItemCollectionSystem, ItemDropSystem, ItemMenuResult, ItemUseSystem, Map, map, MapIndexingSystem, MeleeCombatSystem, MonsterAI, player, Position, Ranged, RangedTargetDrawerSettings, RangedTargetResult, Renderable, RltkExt, VisibilitySystem, WantsToDrop, WantsToUseItem};
+use crate::{AreaOfEffect, damage_system, DamageSystem, gui, ItemCollectionSystem, ItemDropSystem, ItemMenuResult, ItemUseSystem, MapIndexingSystem, MeleeCombatSystem, MonsterAI, player, Ranged, RangedTargetDrawerSettings, RangedTargetResult, render_camera, RltkExt, VisibilitySystem, WantsToDrop, WantsToUseItem};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState {
@@ -27,36 +27,39 @@ impl RunState {
 
 pub struct State {
     pub ecs: World,
+    pub systems: SysRunner,
+}
+
+impl State {
+    fn get_run_state(&mut self) -> RunState {
+        let run_state = self.ecs.fetch::<RunState>();
+        *run_state
+    }
 }
 
 impl GameState for State {
     fn tick(&mut self, context: &mut Rltk) {
-        context.cls_all();
+        context.ext_cls_all();
 
-        draw_entities(&self.ecs, context);
-        map::draw_map(&self.ecs, context);
+        render_camera(&self.ecs, context);
         gui::draw_ui(&self.ecs, context);
 
-        let mut new_run_state;
-        {
-            let run_state = self.ecs.fetch::<RunState>();
-            new_run_state = *run_state;
-        }
+        let mut new_run_state = self.get_run_state();
 
         match new_run_state {
             RunState::PreRun => {
-                self.run_systems();
+                self.systems.run(&mut self.ecs);
                 new_run_state = RunState::AwaitingInput;
             }
             RunState::AwaitingInput => {
                 new_run_state = player::player_input(self, context);
             }
             RunState::PlayerTurn => {
-                self.run_systems();
+                self.systems.run(&mut self.ecs);
                 new_run_state = RunState::MonsterTurn;
             }
             RunState::MonsterTurn => {
-                self.run_systems();
+                self.systems.run(&mut self.ecs);
                 new_run_state = RunState::AwaitingInput;
             }
             RunState::ShowInventory => {
@@ -139,53 +142,35 @@ impl GameState for State {
         }
 
         damage_system::delete_the_dead(&mut self.ecs);
+
+        render_draw_buffer(context);
     }
 }
 
-impl State {
-    pub fn run_systems(&mut self) {
-        let mut vis = VisibilitySystem {};
-        vis.run_now(&self.ecs);
+pub struct SysRunner {
+    dispatcher: Dispatcher<'static, 'static>,
+}
 
-        let mut mob = MonsterAI {};
-        mob.run_now(&self.ecs);
+impl SysRunner {
+    pub fn new() -> Self {
+        let dispatcher = DispatcherBuilder::new()
+            .with(VisibilitySystem, "vis", &[])
+            .with(MonsterAI, "mob", &[])
+            .with(MapIndexingSystem, "map_index", &[])
+            .with(MeleeCombatSystem, "melee_combat", &[])
+            .with(ItemCollectionSystem, "pick_up", &[])
+            .with(ItemUseSystem, "use_item", &[])
+            .with(ItemDropSystem, "drop", &[])
+            .with(DamageSystem, "damage", &["melee_combat", "use_item"])
+            .build();
 
-        let mut map_index = MapIndexingSystem {};
-        map_index.run_now(&self.ecs);
 
-        let mut melee_combat = MeleeCombatSystem {};
-        melee_combat.run_now(&self.ecs);
+        SysRunner { dispatcher }
+    }
 
-        let mut pick_up = ItemCollectionSystem {};
-        pick_up.run_now(&self.ecs);
-
-        let mut drink_potion = ItemUseSystem {};
-        drink_potion.run_now(&self.ecs);
-
-        let mut drop = ItemDropSystem {};
-        drop.run_now(&self.ecs);
-
-        let mut damage = DamageSystem {};
-        damage.run_now(&self.ecs);
-
-        self.ecs.maintain();
+    pub fn run(&mut self, ecs: &mut World) {
+        self.dispatcher.dispatch(ecs);
+        ecs.maintain();
     }
 }
 
-fn draw_entities(ecs: &World, context: &mut Rltk) {
-    let positions = ecs.read_storage::<Position>();
-    let renderables = ecs.read_storage::<Renderable>();
-    let map = ecs.fetch::<Map>();
-    let mut data = (&positions, &renderables).join().collect::<Vec<_>>();
-    data.sort_by(|a, b| {
-        let (_, a_render) = a;
-        let (_, b_render) = b;
-        b_render.render_order.cmp(&a_render.render_order)
-    });
-
-    for (pos, render) in data {
-        if map.is_visible(pos.x, pos.y) {
-            context.layered_set(pos.x, pos.y, render.fg, render.bg, render.glyph, 2, false);
-        }
-    }
-}
