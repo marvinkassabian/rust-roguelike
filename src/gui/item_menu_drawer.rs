@@ -29,9 +29,9 @@ pub fn show_drop_item_menu(state: &mut State, context: &mut Context) -> ItemMenu
     }.show_item_selection_menu()
 }
 
-struct ItemMenuDrawer<'a> {
+struct ItemMenuDrawer<'a, 'b> {
     state: &'a mut State,
-    context: &'a mut Context<'a>,
+    context: &'a mut Context<'b>,
     settings: ItemMenuDrawerSettings<'a>,
 }
 
@@ -39,7 +39,7 @@ struct ItemMenuDrawerSettings<'a> {
     pub title: &'a str,
 }
 
-impl<'a> ItemMenuDrawer<'a> {
+impl<'a, 'b> ItemMenuDrawer<'a, 'b> {
     pub fn show_item_selection_menu(&mut self) -> ItemMenuResult {
         self.context.ext_set_target(CONSOLE_INDEX.ui);
 

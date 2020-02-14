@@ -8,14 +8,14 @@ use crate::{CONSOLE_INDEX, Context, get_screen_bounds, Map, Name, Position};
 
 use self::rltk::{ColorPair, Point, RGB};
 
-pub struct TooltipDrawer<'a> {
+pub struct TooltipDrawer<'a, 'b> {
     pub ecs: &'a World,
-    pub context: &'a mut Context<'a>,
+    pub context: &'a mut Context<'b>,
 }
 
 pub enum TooltipOrientation { Left, Right, Auto }
 
-impl<'a> TooltipDrawer<'a> {
+impl<'a, 'b> TooltipDrawer<'a, 'b> {
     pub fn draw_tooltip(&mut self, screen_x: i32, screen_y: i32, orientation: TooltipOrientation) {
         self.context.ext_set_target(CONSOLE_INDEX.ui);
 

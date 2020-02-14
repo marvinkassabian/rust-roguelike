@@ -7,26 +7,26 @@ const SHOW_BOUNDARIES: bool = true;
 const WALL_HEIGHT: usize = 2;
 const ENTITY_HEIGHT: usize = 2;
 
-pub struct CameraRenderer<'camera> {
-    pub ecs: &'camera World,
-    pub context: &'camera mut Context<'camera>,
+pub struct CameraRenderer<'a, 'b> {
+    pub ecs: &'a World,
+    pub context: &'a mut Context<'b>,
 }
 
-pub fn render_camera<'a>(ecs: &'a World, context: &'a mut Context<'a>) {
+pub fn render_camera(ecs: &World, context: &mut Context) {
     CameraRenderer {
         ecs,
         context,
     }.render_camera()
 }
 
-pub fn get_screen_bounds<'w: 'r, 'r>(ecs: &'w World, context: &'w mut Context<'r>) -> (i32, i32, i32, i32) {
+pub fn get_screen_bounds(ecs: &World, context: &mut Context) -> (i32, i32, i32, i32) {
     CameraRenderer {
         ecs,
         context,
     }.get_screen_bounds()
 }
 
-impl<'a> CameraRenderer<'a> {
+impl<'a, 'b> CameraRenderer<'a, 'b> {
     pub fn render_camera(&mut self) {
         let (min_x, max_x, min_y, max_y) = self.get_screen_bounds();
 

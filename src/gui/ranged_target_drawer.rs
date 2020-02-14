@@ -9,7 +9,7 @@ use self::rltk::{Algorithm2D, ColorPair, Point, RGB};
 #[derive(PartialEq, Copy, Clone)]
 pub enum RangedTargetResult { Cancel, NoResponse, Selected(Point) }
 
-pub fn ranged_target<'ranged_target>(state: &'ranged_target mut State, context: &'ranged_target mut Context<'ranged_target>, settings: RangedTargetDrawerSettings) -> RangedTargetResult {
+pub fn ranged_target(state: &mut State, context: &mut Context, settings: RangedTargetDrawerSettings) -> RangedTargetResult {
     RangedTargetDrawer {
         state,
         context,
@@ -17,9 +17,9 @@ pub fn ranged_target<'ranged_target>(state: &'ranged_target mut State, context: 
     }.draw_ranged_target()
 }
 
-struct RangedTargetDrawer<'a> {
+struct RangedTargetDrawer<'a, 'b> {
     state: &'a mut State,
-    context: &'a mut Context<'a>,
+    context: &'a mut Context<'b>,
     settings: RangedTargetDrawerSettings,
 }
 
@@ -28,7 +28,7 @@ pub struct RangedTargetDrawerSettings {
     pub radius: Option<i32>,
 }
 
-impl<'a> RangedTargetDrawer<'a> {
+impl<'a, 'b> RangedTargetDrawer<'a, 'b> {
     pub fn draw_ranged_target(&mut self) -> RangedTargetResult {
         let (result_or_none, in_range_tiles) = self.draw_range();
 

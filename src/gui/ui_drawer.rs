@@ -6,7 +6,7 @@ use crate::{CombatStats, Context, GameLog, MAP_HEIGHT, Player, TooltipDrawer, To
 
 use self::rltk::{ColorPair, Point, Rect, RGB};
 
-pub fn draw_ui<'a>(ecs: &'a World, context: &'a mut Context<'a>) {
+pub fn draw_ui(ecs: &World, context: &mut Context) {
     UiDrawer {
         ecs,
         context,
@@ -17,12 +17,12 @@ const HEALTH_TEXT_OFFSET: i32 = 12;
 const HEALTH_BAR_START: i32 = 28;
 const LOG_ENTRY_OFFSET: i32 = 2;
 
-struct UiDrawer<'a> {
+struct UiDrawer<'a, 'b> {
     pub ecs: &'a World,
-    pub context: &'a mut Context<'a>,
+    pub context: &'a mut Context<'b>,
 }
 
-impl<'a> UiDrawer<'a> {
+impl<'a, 'b> UiDrawer<'a, 'b> {
     pub fn draw_ui(&mut self) {
         self.draw_game_log_frame();
         self.draw_health();
