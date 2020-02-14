@@ -33,8 +33,12 @@ const USE_DEPTH: bool = false;
 
 impl<'a> ContextBuilder<'a> {
     pub fn create_context(&self) -> Rltk {
-        let mut context = RltkBuilder::simple(self.width, self.height)
-            .with_title(TITLE).build();
+        let mut context = RltkBuilder::new()
+            .with_title(TITLE)
+            .with_dimensions(self.width, self.height)
+            .with_tile_dimensions(TILE_WIDTH, TILE_HEIGHT)
+            .with_resource_path(SHADER_PATH)
+            .build();
 
         let mut tile_width = TILE_WIDTH;
         let mut tile_height = TILE_HEIGHT;
