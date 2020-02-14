@@ -4,18 +4,18 @@ use std::string::ToString;
 
 use specs::prelude::*;
 
-use crate::{CameraRenderer, CONSOLE_INDEX, Map, Name, Position, RltkExt};
+use crate::{CONSOLE_INDEX, Context, get_screen_bounds, Map, Name, Position};
 
-use self::rltk::{ColorPair, Point, RGB, Rltk};
+use self::rltk::{ColorPair, Point, RGB};
 
-pub struct TooltipDrawer<'a> {
+pub struct TooltipDrawer<'a, 'b> {
     pub ecs: &'a World,
-    pub context: &'a mut Rltk,
+    pub context: &'a mut Context<'b>,
 }
 
 pub enum TooltipOrientation { Left, Right, Auto }
 
-impl<'a> TooltipDrawer<'a> {
+impl<'a, 'b> TooltipDrawer<'a, 'b> {
     pub fn draw_tooltip(&mut self, screen_x: i32, screen_y: i32, orientation: TooltipOrientation) {
         self.context.ext_set_target(CONSOLE_INDEX.ui);
 
@@ -25,7 +25,7 @@ impl<'a> TooltipDrawer<'a> {
     }
 
     fn draw_tooltip_internal(&mut self, screen_x: i32, screen_y: i32, orientation: TooltipOrientation) {
-        let (min_x, _, min_y, _) = CameraRenderer { ecs: self.ecs, context: self.context }.get_screen_bounds();
+        let (min_x, _, min_y, _) = get_screen_bounds(&self.ecs, self.context);
         let map_x = screen_x + min_x;
         let map_y = screen_y + min_y;
         let map = self.ecs.fetch::<Map>();

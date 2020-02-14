@@ -1,14 +1,14 @@
 use std::cmp::{max, min};
 
-use rltk::{console, Point, Rltk, VirtualKeyCode};
+use rltk::{console, Point, VirtualKeyCode};
 use specs::prelude::*;
 
-use crate::{GameLog, Item, Map, RunState, WantsToMelee, WantsToPickUp};
+use crate::{Context, GameLog, Item, Map, RunState, WantsToMelee, WantsToPickUp};
 
 use super::{CombatStats, Player, Position, State, Viewshed};
 
-pub fn player_input(state: &mut State, context: &mut Rltk) -> RunState {
-    match context.key {
+pub fn player_input(state: &mut State, context: &mut Context) -> RunState {
+    match context.rltk.key {
         None => { return RunState::AwaitingInput; }
         Some(key) => match key {
             VirtualKeyCode::Left |

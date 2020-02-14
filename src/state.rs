@@ -2,7 +2,7 @@ use rltk::{GameState, render_draw_buffer, Rltk};
 use specs::prelude::*;
 use specs::WorldExt;
 
-use crate::{AreaOfEffect, damage_system, DamageSystem, gui, ItemCollectionSystem, ItemDropSystem, ItemMenuResult, ItemUseSystem, MapIndexingSystem, MeleeCombatSystem, MonsterAI, player, Ranged, RangedTargetDrawerSettings, RangedTargetResult, render_camera, RltkExt, VisibilitySystem, WantsToDrop, WantsToUseItem};
+use crate::{AreaOfEffect, Context, damage_system, DamageSystem, gui, ItemCollectionSystem, ItemDropSystem, ItemMenuResult, ItemUseSystem, MapIndexingSystem, MeleeCombatSystem, MonsterAI, player, Ranged, RangedTargetDrawerSettings, RangedTargetResult, render_camera, VisibilitySystem, WantsToDrop, WantsToUseItem};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RunState {
@@ -38,7 +38,8 @@ impl State {
 }
 
 impl GameState for State {
-    fn tick(&mut self, context: &mut Rltk) {
+    fn tick(&mut self, rltk: &mut Rltk) {
+        let context = &mut Context::new(rltk);
         context.ext_cls_all();
 
         render_camera(&self.ecs, context);
@@ -143,7 +144,7 @@ impl GameState for State {
 
         damage_system::delete_the_dead(&mut self.ecs);
 
-        render_draw_buffer(context);
+        render_draw_buffer(&mut context.rltk);
     }
 }
 

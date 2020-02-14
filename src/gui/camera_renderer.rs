@@ -1,32 +1,32 @@
-use rltk::{Algorithm2D, ColorPair, Console, Point, RGB, Rltk};
+use rltk::{Algorithm2D, ColorPair, Console, Point, RGB};
 use specs::prelude::*;
 
-use crate::{Map, Position, Renderable, RltkExt, TileType};
+use crate::{Context, Map, Position, Renderable, TileType};
 
 const SHOW_BOUNDARIES: bool = true;
 const WALL_HEIGHT: usize = 2;
 const ENTITY_HEIGHT: usize = 2;
 
-pub struct CameraRenderer<'a> {
+pub struct CameraRenderer<'a, 'b> {
     pub ecs: &'a World,
-    pub context: &'a mut Rltk,
+    pub context: &'a mut Context<'b>,
 }
 
-pub fn render_camera(ecs: &World, context: &mut Rltk) {
+pub fn render_camera(ecs: &World, context: &mut Context) {
     CameraRenderer {
         ecs,
         context,
     }.render_camera()
 }
 
-pub fn get_screen_bounds(ecs: &World, context: &mut Rltk) -> (i32, i32, i32, i32) {
+pub fn get_screen_bounds(ecs: &World, context: &mut Context) -> (i32, i32, i32, i32) {
     CameraRenderer {
         ecs,
         context,
     }.get_screen_bounds()
 }
 
-impl<'a> CameraRenderer<'a> {
+impl<'a, 'b> CameraRenderer<'a, 'b> {
     pub fn render_camera(&mut self) {
         let (min_x, max_x, min_y, max_y) = self.get_screen_bounds();
 
@@ -94,7 +94,7 @@ impl<'a> CameraRenderer<'a> {
 
     pub fn get_screen_bounds(&mut self) -> (i32, i32, i32, i32) {
         let player_pos = self.ecs.fetch::<Point>();
-        let (x_chars, y_chars) = self.context.get_char_size();
+        let (x_chars, y_chars) = self.context.rltk.get_char_size();
 
         let center_x = (x_chars / 2) as i32;
         let center_y = (y_chars / 2) as i32;

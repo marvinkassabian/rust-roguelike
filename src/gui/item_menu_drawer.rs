@@ -2,14 +2,14 @@ extern crate rltk;
 
 use specs::prelude::*;
 
-use crate::{CONSOLE_INDEX, InBackpack, MAP_WIDTH, Name, RltkExt, State, WINDOW_HEIGHT};
+use crate::{CONSOLE_INDEX, Context, InBackpack, MAP_WIDTH, Name, State, WINDOW_HEIGHT};
 
-use self::rltk::{ColorPair, Point, Rect, RGB, Rltk, VirtualKeyCode};
+use self::rltk::{ColorPair, Point, Rect, RGB, VirtualKeyCode};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum ItemMenuResult { Cancel, NoResponse, Selected(Entity) }
 
-pub fn show_inventory(state: &mut State, context: &mut Rltk) -> ItemMenuResult {
+pub fn show_inventory(state: &mut State, context: &mut Context) -> ItemMenuResult {
     ItemMenuDrawer {
         state,
         context,
@@ -19,7 +19,7 @@ pub fn show_inventory(state: &mut State, context: &mut Rltk) -> ItemMenuResult {
     }.show_item_selection_menu()
 }
 
-pub fn show_drop_item_menu(state: &mut State, context: &mut Rltk) -> ItemMenuResult {
+pub fn show_drop_item_menu(state: &mut State, context: &mut Context) -> ItemMenuResult {
     ItemMenuDrawer {
         state,
         context,
@@ -29,9 +29,9 @@ pub fn show_drop_item_menu(state: &mut State, context: &mut Rltk) -> ItemMenuRes
     }.show_item_selection_menu()
 }
 
-struct ItemMenuDrawer<'a> {
+struct ItemMenuDrawer<'a, 'b> {
     state: &'a mut State,
-    context: &'a mut Rltk,
+    context: &'a mut Context<'b>,
     settings: ItemMenuDrawerSettings<'a>,
 }
 
@@ -39,7 +39,7 @@ struct ItemMenuDrawerSettings<'a> {
     pub title: &'a str,
 }
 
-impl<'a> ItemMenuDrawer<'a> {
+impl<'a, 'b> ItemMenuDrawer<'a, 'b> {
     pub fn show_item_selection_menu(&mut self) -> ItemMenuResult {
         self.context.ext_set_target(CONSOLE_INDEX.ui);
 
@@ -108,7 +108,7 @@ impl<'a> ItemMenuDrawer<'a> {
         }
         self.context.ext_set_target(CONSOLE_INDEX.base);
 
-        match self.context.key {
+        match self.context.rltk.key {
             None => ItemMenuResult::NoResponse,
             Some(key) => {
                 match key {

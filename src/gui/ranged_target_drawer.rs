@@ -2,14 +2,14 @@ extern crate rltk;
 
 use specs::prelude::*;
 
-use crate::{CameraRenderer, Map, RltkExt, State, Viewshed};
+use crate::{Context, get_screen_bounds, Map, State, Viewshed};
 
-use self::rltk::{Algorithm2D, Console, Point, RGB, Rltk};
+use self::rltk::{Algorithm2D, ColorPair, Point, RGB};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum RangedTargetResult { Cancel, NoResponse, Selected(Point) }
 
-pub fn ranged_target(state: &mut State, context: &mut Rltk, settings: RangedTargetDrawerSettings) -> RangedTargetResult {
+pub fn ranged_target(state: &mut State, context: &mut Context, settings: RangedTargetDrawerSettings) -> RangedTargetResult {
     RangedTargetDrawer {
         state,
         context,
@@ -17,9 +17,9 @@ pub fn ranged_target(state: &mut State, context: &mut Rltk, settings: RangedTarg
     }.draw_ranged_target()
 }
 
-struct RangedTargetDrawer<'a> {
+struct RangedTargetDrawer<'a, 'b> {
     state: &'a mut State,
-    context: &'a mut Rltk,
+    context: &'a mut Context<'b>,
     settings: RangedTargetDrawerSettings,
 }
 
@@ -28,7 +28,7 @@ pub struct RangedTargetDrawerSettings {
     pub radius: Option<i32>,
 }
 
-impl<'a> RangedTargetDrawer<'a> {
+impl<'a, 'b> RangedTargetDrawer<'a, 'b> {
     pub fn draw_ranged_target(&mut self) -> RangedTargetResult {
         let (result_or_none, in_range_tiles) = self.draw_range();
 
@@ -36,8 +36,8 @@ impl<'a> RangedTargetDrawer<'a> {
             return result_or_none.unwrap();
         }
 
-        let (screen_x, screen_y) = self.context.mouse_pos();
-        let (min_x, _, min_y, _) = CameraRenderer { ecs: &self.state.ecs, context: self.context }.get_screen_bounds();
+        let (screen_x, screen_y) = self.context.rltk.mouse_pos();
+        let (min_x, _, min_y, _) = get_screen_bounds(&self.state.ecs, self.context);
         let (map_x, map_y) = (screen_x + min_x, screen_y + min_y);
         let is_in_range = in_range_tiles
             .iter()
@@ -46,12 +46,12 @@ impl<'a> RangedTargetDrawer<'a> {
         if is_in_range {
             self.draw_radius(Point::new(screen_x, screen_y));
             self.context.ext_set_bg(Point::new(screen_x, screen_y), RGB::named(rltk::CYAN));
-            if self.context.left_click {
+            if self.context.rltk.left_click {
                 return RangedTargetResult::Selected(Point::new(map_x, map_y));
             }
         } else {
             self.context.ext_set_bg(Point::new(screen_x, screen_y), RGB::named(rltk::RED));
-            if self.context.left_click {
+            if self.context.rltk.left_click {
                 return RangedTargetResult::Cancel;
             }
         }
@@ -60,12 +60,12 @@ impl<'a> RangedTargetDrawer<'a> {
     }
 
     fn draw_range(&mut self) -> (Option<RangedTargetResult>, Vec<Point>) {
-        let (min_x, _, min_y, _) = CameraRenderer { ecs: &self.state.ecs, context: self.context }.get_screen_bounds();
+        let (min_x, _, min_y, _) = get_screen_bounds(&self.state.ecs, self.context);
         let player_entity = self.state.ecs.fetch::<Entity>();
         let player_position = self.state.ecs.fetch::<Point>();
         let viewsheds = self.state.ecs.read_storage::<Viewshed>();
 
-        self.context.print_color(5, 0, RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK), "Select Target:");
+        self.context.ext_print_color(Point::new(5, 0), "Select Target:", ColorPair::new(RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK)));
 
         let player_viewshed = viewsheds.get(*player_entity);
         let mut in_range_tiles = Vec::new();
@@ -90,7 +90,7 @@ impl<'a> RangedTargetDrawer<'a> {
         if self.settings.radius.is_none() {
             return;
         }
-        let (min_x, _, min_y, _) = CameraRenderer { ecs: &self.state.ecs, context: self.context }.get_screen_bounds();
+        let (min_x, _, min_y, _) = get_screen_bounds(&self.state.ecs, self.context);
 
         let map_target = Point::new(screen_target.x + min_x, screen_target.y + min_y);
 

@@ -2,7 +2,7 @@ use std::string::ToString;
 
 use rltk::{Console, console, Rltk, RltkBuilder, SimpleConsole, SparseConsole};
 
-use crate::{CONSOLE_INDEX, LAYER_COUNT, RltkExt, TITLE};
+use crate::{CONSOLE_INDEX, LAYER_COUNT, TITLE};
 
 const LAYER_OFFSET_X: f32 = 0.15;
 const LAYER_OFFSET_Y: f32 = 0.28;
@@ -96,7 +96,7 @@ impl<'a> ContextBuilder<'a> {
 
         check_console_index(CONSOLE_INDEX.ui, ui_console_index);
 
-        context.ext_set_target(CONSOLE_INDEX.base);
+        context.set_active_console(CONSOLE_INDEX.base);
 
         context.with_post_scanlines(false);
 
