@@ -117,9 +117,14 @@ pub fn health_potion(ecs: &mut World, x: i32, y: i32) {
 }
 
 pub fn magic_missile_scroll(ecs: &mut World, x: i32, y: i32) {
+    magic_missile_scroll_base(ecs)
+        .with(Position { x, y })
+        .build();
+}
+
+pub fn magic_missile_scroll_base(ecs: &mut World) -> EntityBuilder {
     ecs
         .create_entity()
-        .with(Position { x, y })
         .with(Renderable {
             glyph: rltk::to_cp437(')'),
             fg: RGB::named(rltk::CYAN),
@@ -131,7 +136,6 @@ pub fn magic_missile_scroll(ecs: &mut World, x: i32, y: i32) {
         .with(Consumable {})
         .with(Ranged { range: 6 })
         .with(InflictsDamage { damage: 8 })
-        .build();
 }
 
 pub fn fireball_scroll(ecs: &mut World, x: i32, y: i32) {
@@ -154,6 +158,14 @@ fn confusion_scroll(ecs: &mut World, x: i32, y: i32) {
         .with(Consumable {})
         .with(Ranged { range: 6 })
         .with(Confusion { turns: 4 })
+        .build();
+}
+
+fn magic_missile_scroll_in_pack(ecs: &mut World, owner: Entity) {
+    magic_missile_scroll_base(ecs)
+        .with(InBackpack {
+            owner,
+        })
         .build();
 }
 
@@ -187,6 +199,8 @@ pub fn spawn_map(ecs: &mut World, map: &Map) {
 
     ecs.insert(Point::new(pt.x, pt.y));
     let player = player(ecs, pt.x, pt.y);
+
+    magic_missile_scroll_in_pack(ecs, player);
 
     for _ in 0..5 {
         fireball_scroll_in_pack(ecs, player);

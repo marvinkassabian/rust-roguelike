@@ -4,7 +4,7 @@ use specs::prelude::*;
 use crate::{Map, Position, Renderable, RltkExt, TileType};
 
 const SHOW_BOUNDARIES: bool = true;
-const WALL_HEIGHT: usize = 3;
+const WALL_HEIGHT: usize = 2;
 const ENTITY_HEIGHT: usize = 2;
 
 pub struct CameraRenderer<'a> {

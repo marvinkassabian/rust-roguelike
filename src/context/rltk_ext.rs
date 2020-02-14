@@ -2,7 +2,7 @@ use rltk::{ColorPair, Console, DrawBatch, Point, Rect, RGB, Rltk};
 
 use crate::CONSOLE_INDEX;
 
-const USE_BUFFER: bool = true;
+const USE_BUFFER: bool = false;
 
 pub trait RltkExt {
     fn ext_layered_set(&mut self, pos: Point, color: ColorPair, glyph: u8, height: usize, include_base: bool);
@@ -34,12 +34,15 @@ impl RltkExt for Rltk {
         let total_layers = layers.len() as f32;
         let darkest_grey = RGB::named(rltk::GREY30);
 
-        for layer in layers.iter() {
-            let grey_ratio = 1. - (*layer as f32 / total_layers);
+        for (i, layer) in layers.iter().enumerate() {
+            let grey_ratio = 1. - ((i as f32 + 1.) / total_layers);
             let layer_grey = darkest_grey * grey_ratio;
             let shadow_fg = color.fg - layer_grey;
+            self.ext_set_target(*layer);
             self.ext_set(pos, ColorPair::new(shadow_fg, color.bg), glyph);
         }
+
+        self.ext_set_target(CONSOLE_INDEX.base);
     }
 
     fn ext_cls_all(&mut self) {
@@ -48,6 +51,8 @@ impl RltkExt for Rltk {
             self.ext_set_target(index);
             self.ext_cls();
         }
+
+        self.ext_set_target(CONSOLE_INDEX.base);
     }
 
     fn ext_cls(&mut self) {

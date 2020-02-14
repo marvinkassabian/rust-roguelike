@@ -4,15 +4,15 @@ use specs::prelude::*;
 
 use crate::{CONSOLE_INDEX, InBackpack, MAP_WIDTH, Name, RltkExt, State, WINDOW_HEIGHT};
 
-use self::rltk::{ColorPair, Console, Point, Rect, RGB, Rltk, VirtualKeyCode};
+use self::rltk::{ColorPair, Point, Rect, RGB, Rltk, VirtualKeyCode};
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum ItemMenuResult { Cancel, NoResponse, Selected(Entity) }
 
 pub fn show_inventory(state: &mut State, context: &mut Rltk) -> ItemMenuResult {
     ItemMenuDrawer {
-        state: state,
-        context: context,
+        state,
+        context,
         settings: ItemMenuDrawerSettings {
             title: "Inventory",
         },
@@ -92,19 +92,19 @@ impl<'a> ItemMenuDrawer<'a> {
                 in_backpack.owner == *player_entity
             });
 
-        let mut j = 'a' as u8;
+        let mut hotkey = 'a' as u8;
         let mut selectable_items: Vec<Entity> = Vec::new();
 
         for (name, _in_backpack, entity) in inventory {
-            self.context.set(INVENTORY_X + 2, y, plain_fg, bg, rltk::to_cp437('('));
-            self.context.set(INVENTORY_X + 3, y, highlight_fg, bg, j);
-            self.context.set(INVENTORY_X + 4, y, plain_fg, bg, rltk::to_cp437(')'));
+            self.context.ext_set(Point::new(INVENTORY_X + 2, y), ColorPair::new(plain_fg, bg), rltk::to_cp437('('));
+            self.context.ext_set(Point::new(INVENTORY_X + 3, y), ColorPair::new(highlight_fg, bg), hotkey);
+            self.context.ext_set(Point::new(INVENTORY_X + 4, y), ColorPair::new(plain_fg, bg), rltk::to_cp437(')'));
 
             self.context.ext_print_color(Point::new(INVENTORY_X + 6, y), &name.name, ColorPair::new(plain_fg, bg));
 
             selectable_items.push(entity);
             y += 1;
-            j += 1;
+            hotkey += 1;
         }
         self.context.ext_set_target(CONSOLE_INDEX.base);
 
