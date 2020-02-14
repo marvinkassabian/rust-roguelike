@@ -1,6 +1,6 @@
 use std::string::ToString;
 
-use rltk::{Console, console, InitHints, Rltk, SimpleConsole, SparseConsole};
+use rltk::{Console, console, Rltk, RltkBuilder, SimpleConsole, SparseConsole};
 
 use crate::{CONSOLE_INDEX, LAYER_COUNT, RltkExt, TITLE};
 
@@ -33,7 +33,12 @@ const USE_DEPTH: bool = false;
 
 impl<'a> ContextBuilder<'a> {
     pub fn create_context(&self) -> Rltk {
-        let mut context = Rltk::init_raw(self.width * TILE_WIDTH, self.height * TILE_HEIGHT, TITLE, InitHints::new());
+        let mut context = RltkBuilder::new()
+            .with_title(TITLE)
+            .with_dimensions(self.width, self.height)
+            .with_tile_dimensions(TILE_WIDTH, TILE_HEIGHT)
+            .with_resource_path(SHADER_PATH)
+            .build();
 
         let mut tile_width = TILE_WIDTH;
         let mut tile_height = TILE_HEIGHT;
