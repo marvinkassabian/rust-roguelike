@@ -41,7 +41,7 @@ struct ItemMenuDrawerSettings<'a> {
 
 impl<'a, 'b> ItemMenuDrawer<'a, 'b> {
     pub fn show_item_selection_menu(&mut self) -> ItemMenuResult {
-        self.context.ext_set_target(CONSOLE_INDEX.ui);
+        self.context.set_target(CONSOLE_INDEX.ui);
 
         let player_entity = self.state.ecs.fetch::<Entity>();
         let names = self.state.ecs.read_storage::<Name>();
@@ -64,11 +64,11 @@ impl<'a, 'b> ItemMenuDrawer<'a, 'b> {
         const INVENTORY_X: i32 = MAP_WIDTH as i32 / 2 - (INVENTORY_WIDTH / 2);
         const BORDER_TEXT_OFFSET: i32 = 3;
 
-        self.context.ext_draw_box(
+        self.context.draw_box(
             Rect::with_size(INVENTORY_X, y - 2, INVENTORY_WIDTH, (inventory_count + 3) as i32),
             ColorPair::new(plain_fg, bg));
 
-        self.context.ext_print_color(
+        self.context.print_color(
             Point::new(
                 INVENTORY_X + BORDER_TEXT_OFFSET,
                 y - 2),
@@ -77,7 +77,7 @@ impl<'a, 'b> ItemMenuDrawer<'a, 'b> {
                 highlight_fg,
                 bg));
 
-        self.context.ext_print_color(
+        self.context.print_color(
             Point::new(
                 INVENTORY_X + BORDER_TEXT_OFFSET,
                 y + inventory_count as i32 + 1),
@@ -96,17 +96,17 @@ impl<'a, 'b> ItemMenuDrawer<'a, 'b> {
         let mut selectable_items: Vec<Entity> = Vec::new();
 
         for (name, _in_backpack, entity) in inventory {
-            self.context.ext_set(Point::new(INVENTORY_X + 2, y), ColorPair::new(plain_fg, bg), rltk::to_cp437('('));
-            self.context.ext_set(Point::new(INVENTORY_X + 3, y), ColorPair::new(highlight_fg, bg), hotkey);
-            self.context.ext_set(Point::new(INVENTORY_X + 4, y), ColorPair::new(plain_fg, bg), rltk::to_cp437(')'));
+            self.context.set(Point::new(INVENTORY_X + 2, y), ColorPair::new(plain_fg, bg), rltk::to_cp437('('));
+            self.context.set(Point::new(INVENTORY_X + 3, y), ColorPair::new(highlight_fg, bg), hotkey);
+            self.context.set(Point::new(INVENTORY_X + 4, y), ColorPair::new(plain_fg, bg), rltk::to_cp437(')'));
 
-            self.context.ext_print_color(Point::new(INVENTORY_X + 6, y), &name.name, ColorPair::new(plain_fg, bg));
+            self.context.print_color(Point::new(INVENTORY_X + 6, y), &name.name, ColorPair::new(plain_fg, bg));
 
             selectable_items.push(entity);
             y += 1;
             hotkey += 1;
         }
-        self.context.ext_set_target(CONSOLE_INDEX.base);
+        self.context.set_target(CONSOLE_INDEX.base);
 
         match self.context.rltk.key {
             None => ItemMenuResult::NoResponse,

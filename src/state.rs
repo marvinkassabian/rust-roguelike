@@ -40,7 +40,7 @@ impl State {
 impl GameState for State {
     fn tick(&mut self, rltk: &mut Rltk) {
         let context = &mut Context::new(rltk);
-        context.ext_cls_all();
+        context.cls_all();
 
         render_camera(&self.ecs, context);
         gui::draw_ui(&self.ecs, context);

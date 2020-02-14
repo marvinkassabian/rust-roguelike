@@ -45,12 +45,12 @@ impl<'a, 'b> RangedTargetDrawer<'a, 'b> {
 
         if is_in_range {
             self.draw_radius(Point::new(screen_x, screen_y));
-            self.context.ext_set_bg(Point::new(screen_x, screen_y), RGB::named(rltk::CYAN));
+            self.context.set_bg(Point::new(screen_x, screen_y), RGB::named(rltk::CYAN));
             if self.context.rltk.left_click {
                 return RangedTargetResult::Selected(Point::new(map_x, map_y));
             }
         } else {
-            self.context.ext_set_bg(Point::new(screen_x, screen_y), RGB::named(rltk::RED));
+            self.context.set_bg(Point::new(screen_x, screen_y), RGB::named(rltk::RED));
             if self.context.rltk.left_click {
                 return RangedTargetResult::Cancel;
             }
@@ -65,7 +65,7 @@ impl<'a, 'b> RangedTargetDrawer<'a, 'b> {
         let player_position = self.state.ecs.fetch::<Point>();
         let viewsheds = self.state.ecs.read_storage::<Viewshed>();
 
-        self.context.ext_print_color(Point::new(5, 0), "Select Target:", ColorPair::new(RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK)));
+        self.context.print_color(Point::new(5, 0), "Select Target:", ColorPair::new(RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK)));
 
         let player_viewshed = viewsheds.get(*player_entity);
         let mut in_range_tiles = Vec::new();
@@ -76,7 +76,7 @@ impl<'a, 'b> RangedTargetDrawer<'a, 'b> {
                 for visible_tile in player_viewshed.visible_tiles.iter() {
                     let distance = rltk::DistanceAlg::Pythagoras.distance2d(*player_position, *visible_tile);
                     if distance <= self.settings.range as f32 {
-                        self.context.ext_set_bg(Point::new(visible_tile.x - min_x, visible_tile.y - min_y), RGB::named(rltk::BLUE));
+                        self.context.set_bg(Point::new(visible_tile.x - min_x, visible_tile.y - min_y), RGB::named(rltk::BLUE));
                         in_range_tiles.push(*visible_tile);
                     }
                 }
@@ -107,7 +107,7 @@ impl<'a, 'b> RangedTargetDrawer<'a, 'b> {
 
         for tile in valid_blast_tiles {
             let screen_tile = Point::new(tile.x - min_x, tile.y - min_y);
-            self.context.ext_set_bg(screen_tile, RGB::named(rltk::ORANGE));
+            self.context.set_bg(screen_tile, RGB::named(rltk::ORANGE));
         }
     }
 }

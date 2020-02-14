@@ -4,13 +4,14 @@ use rltk::{Console, console, Rltk, RltkBuilder, SimpleConsole, SparseConsole};
 
 use crate::{CONSOLE_INDEX, LAYER_COUNT, TITLE};
 
-const LAYER_OFFSET_X: f32 = 0.15;
-const LAYER_OFFSET_Y: f32 = 0.28;
+const LAYER_OFFSET_X: f32 = 0.1;
+const LAYER_OFFSET_Y: f32 = 0.1;
 const LAYER_STATIC_OFFSET_X: f32 = 0.;
 const LAYER_STATIC_OFFSET_Y: f32 = 0.;
 const SHADER_PATH: &str = "resources";
 const TILE_WIDTH: u32 = 8 * SCREEN_MULTIPLIER;
 const TILE_HEIGHT: u32 = 8 * SCREEN_MULTIPLIER;
+const USE_DEPTH: bool = false;
 
 const SCREEN_MULTIPLIER: u32 = 1;
 const SCALE_STEP: u32 = 2;
@@ -28,8 +29,6 @@ pub fn build_context(width: i32, height: i32, title: &str) -> Rltk {
         title,
     }.create_context()
 }
-
-const USE_DEPTH: bool = false;
 
 impl<'a> ContextBuilder<'a> {
     pub fn create_context(&self) -> Rltk {

@@ -17,11 +17,11 @@ pub enum TooltipOrientation { Left, Right, Auto }
 
 impl<'a, 'b> TooltipDrawer<'a, 'b> {
     pub fn draw_tooltip(&mut self, screen_x: i32, screen_y: i32, orientation: TooltipOrientation) {
-        self.context.ext_set_target(CONSOLE_INDEX.ui);
+        self.context.set_target(CONSOLE_INDEX.ui);
 
         self.draw_tooltip_internal(screen_x, screen_y, orientation);
 
-        self.context.ext_set_target(CONSOLE_INDEX.base);
+        self.context.set_target(CONSOLE_INDEX.base);
     }
 
     fn draw_tooltip_internal(&mut self, screen_x: i32, screen_y: i32, orientation: TooltipOrientation) {
@@ -75,16 +75,16 @@ impl<'a, 'b> TooltipDrawer<'a, 'b> {
 
         let mut y = screen_y;
         for entity_name in tooltip.iter() {
-            self.context.ext_print_color(Point::new(left_x, y), entity_name, ColorPair::new(fg, bg));
+            self.context.print_color(Point::new(left_x, y), entity_name, ColorPair::new(fg, bg));
             let name_length = entity_name.len() as i32;
             let padding = width - name_length as i32;
 
             for i in 0..padding {
-                self.context.ext_print_color(Point::new(left_x + name_length + i, y), &" ".to_string(), ColorPair::new(fg, bg));
+                self.context.print_color(Point::new(left_x + name_length + i, y), &" ".to_string(), ColorPair::new(fg, bg));
             }
             y += 1;
         }
 
-        self.context.ext_print_color(Point::new(arrow_pos.x, arrow_pos.y), &arrow_text.to_string(), ColorPair::new(fg, bg));
+        self.context.print_color(Point::new(arrow_pos.x, arrow_pos.y), &arrow_text.to_string(), ColorPair::new(fg, bg));
     }
 }

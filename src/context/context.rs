@@ -13,7 +13,7 @@ impl<'a> Context<'a> {
         Context { rltk }
     }
 
-    pub fn ext_layered_set(&mut self, pos: Point, color: ColorPair, glyph: u8, height: usize, include_base: bool) {
+    pub fn layered_set(&mut self, pos: Point, color: ColorPair, glyph: u8, height: usize, include_base: bool) {
         let all_layers = CONSOLE_INDEX.get_world_indices(include_base);
         let (layers, _) = all_layers.split_at(height);
 
@@ -24,24 +24,24 @@ impl<'a> Context<'a> {
             let grey_ratio = 1. - ((i as f32 + 1.) / total_layers);
             let layer_grey = darkest_grey * grey_ratio;
             let shadow_fg = color.fg - layer_grey;
-            self.ext_set_target(*layer);
-            self.ext_set(pos, ColorPair::new(shadow_fg, color.bg), glyph);
+            self.set_target(*layer);
+            self.set(pos, ColorPair::new(shadow_fg, color.bg), glyph);
         }
 
-        self.ext_set_target(CONSOLE_INDEX.base);
+        self.set_target(CONSOLE_INDEX.base);
     }
 
-    pub fn ext_cls_all(&mut self) {
+    pub fn cls_all(&mut self) {
         let indices = CONSOLE_INDEX.get_all_indices();
         for index in indices {
-            self.ext_set_target(index);
-            self.ext_cls();
+            self.set_target(index);
+            self.cls();
         }
 
-        self.ext_set_target(CONSOLE_INDEX.base);
+        self.set_target(CONSOLE_INDEX.base);
     }
 
-    pub fn ext_cls(&mut self) {
+    pub fn cls(&mut self) {
         if USE_BUFFER {
             let mut draw_batch = DrawBatch::new();
             draw_batch.cls();
@@ -51,7 +51,7 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn ext_set_target(&mut self, index: usize) {
+    pub fn set_target(&mut self, index: usize) {
         if USE_BUFFER {
             let mut draw_batch = DrawBatch::new();
             draw_batch.target(index);
@@ -61,7 +61,7 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn ext_draw_box(&mut self, pos: Rect, color: ColorPair) {
+    pub fn draw_box(&mut self, pos: Rect, color: ColorPair) {
         if USE_BUFFER {
             let mut draw_batch = DrawBatch::new();
             draw_batch.draw_box(pos, color);
@@ -71,7 +71,7 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn ext_set_bg(&mut self, pos: Point, bg: RGB) {
+    pub fn set_bg(&mut self, pos: Point, bg: RGB) {
         if USE_BUFFER {
             let mut draw_batch = DrawBatch::new();
             draw_batch.set_bg(pos, bg);
@@ -81,7 +81,7 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn ext_print_color<S: ToString>(&mut self, pos: Point, text: S, color: ColorPair) {
+    pub fn print_color<S: ToString>(&mut self, pos: Point, text: S, color: ColorPair) {
         if USE_BUFFER {
             let mut draw_batch = DrawBatch::new();
             draw_batch.print_color(pos, text, color);
@@ -91,7 +91,7 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn ext_draw_bar_horizontal(&mut self, pos: Point, width: i32, n: i32, max: i32, color: ColorPair) {
+    pub fn draw_bar_horizontal(&mut self, pos: Point, width: i32, n: i32, max: i32, color: ColorPair) {
         if USE_BUFFER {
             let mut draw_batch = DrawBatch::new();
             draw_batch.bar_horizontal(pos, width, n, max, color);
@@ -101,7 +101,7 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn ext_print<S: ToString>(&mut self, pos: Point, text: S) {
+    pub fn print<S: ToString>(&mut self, pos: Point, text: S) {
         if USE_BUFFER {
             let mut draw_batch = DrawBatch::new();
             draw_batch.print(pos, text);
@@ -111,7 +111,7 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn ext_set(&mut self, pos: Point, color: ColorPair, glyph: u8) {
+    pub fn set(&mut self, pos: Point, color: ColorPair, glyph: u8) {
         if USE_BUFFER {
             let mut draw_batch = DrawBatch::new();
             draw_batch.set(pos, color, glyph);

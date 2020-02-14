@@ -32,7 +32,7 @@ impl<'a, 'b> UiDrawer<'a, 'b> {
     }
 
     fn draw_game_log_frame(&mut self) {
-        self.context.ext_draw_box(
+        self.context.draw_box(
             Rect::with_size(
                 0,
                 MAP_HEIGHT as i32,
@@ -50,7 +50,7 @@ impl<'a, 'b> UiDrawer<'a, 'b> {
         for (_player, stats) in (&players, &combat_stats).join() {
             let health = format!(" HP: {} / {} ", stats.hp, stats.max_hp);
 
-            self.context.ext_print_color(
+            self.context.print_color(
                 Point::new(
                     HEALTH_TEXT_OFFSET,
                     MAP_HEIGHT),
@@ -60,7 +60,7 @@ impl<'a, 'b> UiDrawer<'a, 'b> {
                     RGB::named(rltk::BLACK)),
             );
 
-            self.context.ext_draw_bar_horizontal(
+            self.context.draw_bar_horizontal(
                 Point::new(
                     HEALTH_BAR_START,
                     MAP_HEIGHT),
@@ -79,7 +79,7 @@ impl<'a, 'b> UiDrawer<'a, 'b> {
         let mut y = WINDOW_HEIGHT - 2;
         for entry in log.entries.iter().skip(log.display_index as usize) {
             if y >= MAP_HEIGHT + 1 {
-                self.context.ext_print(Point::new(LOG_ENTRY_OFFSET, y), &entry.get_formatted_message());
+                self.context.print(Point::new(LOG_ENTRY_OFFSET, y), &entry.get_formatted_message());
             } else {
                 break;
             }
@@ -90,7 +90,7 @@ impl<'a, 'b> UiDrawer<'a, 'b> {
 
     fn draw_mouse_cursor(&mut self) {
         let (mouse_x, mouse_y) = self.context.rltk.mouse_pos();
-        self.context.ext_set_bg(Point::new(mouse_x, mouse_y), RGB::named(rltk::MAGENTA));
+        self.context.set_bg(Point::new(mouse_x, mouse_y), RGB::named(rltk::MAGENTA));
     }
 
     fn draw_tooltip(&mut self) {

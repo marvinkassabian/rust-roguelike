@@ -48,13 +48,13 @@ impl<'a, 'b> CameraRenderer<'a, 'b> {
                         let (glyph, fg, bg, is_layered) = get_tile_glyph(idx, &*map);
 
                         if is_layered {
-                            self.context.ext_layered_set(Point::new(x, y), ColorPair::new(fg, bg), glyph, WALL_HEIGHT, true);
+                            self.context.layered_set(Point::new(x, y), ColorPair::new(fg, bg), glyph, WALL_HEIGHT, true);
                         } else {
-                            self.context.ext_set(Point::new(x, y), ColorPair::new(fg, bg), glyph);
+                            self.context.set(Point::new(x, y), ColorPair::new(fg, bg), glyph);
                         }
                     }
                 } else if SHOW_BOUNDARIES {
-                    self.context.ext_set(
+                    self.context.set(
                         Point::new(x, y),
                         ColorPair::new(RGB::named(rltk::GREY), RGB::named(rltk::BLACK)),
                         rltk::to_cp437('·'));
@@ -86,7 +86,7 @@ impl<'a, 'b> CameraRenderer<'a, 'b> {
                 let entity_screen_x = pos.x - min_x;
                 let entity_screen_y = pos.y - min_y;
                 if entity_screen_x > 0 && entity_screen_x < map_width && entity_screen_y > 0 && entity_screen_y < map_height {
-                    self.context.ext_layered_set(Point::new(entity_screen_x, entity_screen_y), ColorPair::new(render.fg, render.bg), render.glyph, ENTITY_HEIGHT, true);
+                    self.context.layered_set(Point::new(entity_screen_x, entity_screen_y), ColorPair::new(render.fg, render.bg), render.glyph, ENTITY_HEIGHT, true);
                 }
             }
         }
