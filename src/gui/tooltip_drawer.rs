@@ -4,7 +4,7 @@ use std::string::ToString;
 
 use specs::prelude::*;
 
-use crate::{CONSOLE_INDEX, Map, Name, Position, RltkExt};
+use crate::{CameraRenderer, CONSOLE_INDEX, Map, Name, Position, RltkExt};
 
 use self::rltk::{ColorPair, Point, RGB, Rltk};
 
@@ -25,6 +25,9 @@ impl<'a> TooltipDrawer<'a> {
     }
 
     fn draw_tooltip_internal(&mut self, x: i32, y: i32, orientation: TooltipOrientation) {
+        let (min_x, _, min_y, _) = CameraRenderer { ecs: self.ecs, context: self.context }.get_screen_bounds();
+        let x = x + min_x;
+        let y = y + min_y;
         let map = self.ecs.fetch::<Map>();
         let names = self.ecs.read_storage::<Name>();
         let positions = self.ecs.read_storage::<Position>();

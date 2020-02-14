@@ -2,7 +2,7 @@ use rltk::{ColorPair, Console, DrawBatch, Point, Rect, RGB, Rltk};
 
 use crate::CONSOLE_INDEX;
 
-const USE_BUFFER: bool = false;
+const USE_BUFFER: bool = true;
 
 pub trait RltkExt {
     fn ext_layered_set(&mut self, pos: Point, color: ColorPair, glyph: u8, height: usize, include_base: bool);

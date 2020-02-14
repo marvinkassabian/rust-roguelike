@@ -2,9 +2,9 @@ extern crate rltk;
 
 use specs::prelude::*;
 
-use crate::{CameraRenderer, CombatStats, GameLog, MAP_HEIGHT, Player, RltkExt, TooltipDrawer, TooltipOrientation, WINDOW_HEIGHT, WINDOW_WIDTH};
+use crate::{CameraRenderer, CombatStats, CONSOLE_INDEX, GameLog, MAP_HEIGHT, Player, RltkExt, TooltipDrawer, TooltipOrientation, WINDOW_HEIGHT, WINDOW_WIDTH};
 
-use self::rltk::{ColorPair, Point, Rect, RGB, Rltk};
+use self::rltk::{ColorPair, console, Point, Rect, RGB, Rltk};
 
 pub fn draw_ui(ecs: &World, context: &mut Rltk) {
     UiDrawer {
@@ -89,25 +89,17 @@ impl<'a> UiDrawer<'a> {
     }
 
     fn draw_mouse_cursor(&mut self) {
-        let (min_x, _, min_y, _) = CameraRenderer {
-            ecs: self.ecs,
-            context: self.context,
-        }.get_screen_bounds();
+        let (min_x, _, min_y, _) = CameraRenderer { ecs: self.ecs, context: self.context }.get_screen_bounds();
 
-        //console::log(format!("min_x: {}, min_y: {}, active_console: {}", min_x, min_y, self.context.active_console));
-
-        //self.context.set_active_console(CONSOLE_INDEX.base);
+        self.context.ext_set_target(CONSOLE_INDEX.base);
         let (mouse_x, mouse_y) = self.context.mouse_pos();
-        //console::log(format!("mouse_x: {}, mouse_y: {}", mouse_x, mouse_y));
         self.context.ext_set_bg(Point::new(mouse_x + min_x, mouse_y + min_y), RGB::named(rltk::MAGENTA));
     }
 
     fn draw_tooltip(&mut self) {
         let (mouse_x, mouse_y) = self.context.mouse_pos();
 
-        TooltipDrawer {
-            ecs: self.ecs,
-            context: self.context,
-        }.draw_tooltip(mouse_x, mouse_y, TooltipOrientation::Auto)
+        TooltipDrawer { ecs: self.ecs, context: self.context }
+            .draw_tooltip(mouse_x, mouse_y, TooltipOrientation::Auto);
     }
 }

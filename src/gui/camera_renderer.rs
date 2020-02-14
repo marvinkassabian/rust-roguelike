@@ -15,8 +15,15 @@ pub struct CameraRenderer<'a> {
 pub fn render_camera(ecs: &World, context: &mut Rltk) {
     CameraRenderer {
         ecs,
-        context: context,
+        context,
     }.render_camera()
+}
+
+pub fn get_screen_bounds(ecs: &World, context: &mut Rltk) -> (i32, i32, i32, i32) {
+    CameraRenderer {
+        ecs,
+        context,
+    }.get_screen_bounds()
 }
 
 impl<'a> CameraRenderer<'a> {
