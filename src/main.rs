@@ -17,6 +17,7 @@ pub use systems::*;
 
 rltk::add_wasm_support!();
 mod systems;
+mod playground;
 mod map;
 mod player;
 mod components;
