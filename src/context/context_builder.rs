@@ -1,8 +1,8 @@
 use std::string::ToString;
 
-use rltk::{Console, console, InitHints, Rltk, SimpleConsole, SparseConsole};
+use rltk::{Console, console, Rltk, RltkBuilder, SimpleConsole, SparseConsole};
 
-use crate::{CONSOLE_INDEX, LAYER_COUNT, RltkExt, TITLE};
+use crate::{CONSOLE_INDEX, LAYER_COUNT, TITLE};
 
 const LAYER_OFFSET_X: f32 = 0.15;
 const LAYER_OFFSET_Y: f32 = 0.28;
@@ -33,7 +33,8 @@ const USE_DEPTH: bool = false;
 
 impl<'a> ContextBuilder<'a> {
     pub fn create_context(&self) -> Rltk {
-        let mut context = Rltk::init_raw(self.width * TILE_WIDTH, self.height * TILE_HEIGHT, TITLE, InitHints::new());
+        let mut context = RltkBuilder::simple(self.width, self.height)
+            .with_title(TITLE).build();
 
         let mut tile_width = TILE_WIDTH;
         let mut tile_height = TILE_HEIGHT;
@@ -91,7 +92,7 @@ impl<'a> ContextBuilder<'a> {
 
         check_console_index(CONSOLE_INDEX.ui, ui_console_index);
 
-        context.ext_set_target(CONSOLE_INDEX.base);
+        context.set_active_console(CONSOLE_INDEX.base);
 
         context.with_post_scanlines(false);
 

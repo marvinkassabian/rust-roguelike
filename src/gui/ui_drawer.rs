@@ -2,11 +2,11 @@ extern crate rltk;
 
 use specs::prelude::*;
 
-use crate::{CombatStats, GameLog, MAP_HEIGHT, Player, RltkExt, TooltipDrawer, TooltipOrientation, WINDOW_HEIGHT, WINDOW_WIDTH};
+use crate::{CombatStats, Context, GameLog, MAP_HEIGHT, Player, TooltipDrawer, TooltipOrientation, WINDOW_HEIGHT, WINDOW_WIDTH};
 
-use self::rltk::{ColorPair, Point, Rect, RGB, Rltk};
+use self::rltk::{ColorPair, Point, Rect, RGB};
 
-pub fn draw_ui(ecs: &World, context: &mut Rltk) {
+pub fn draw_ui<'a>(ecs: &'a World, context: &'a mut Context<'a>) {
     UiDrawer {
         ecs,
         context,
@@ -19,7 +19,7 @@ const LOG_ENTRY_OFFSET: i32 = 2;
 
 struct UiDrawer<'a> {
     pub ecs: &'a World,
-    pub context: &'a mut Rltk,
+    pub context: &'a mut Context<'a>,
 }
 
 impl<'a> UiDrawer<'a> {
@@ -89,12 +89,12 @@ impl<'a> UiDrawer<'a> {
     }
 
     fn draw_mouse_cursor(&mut self) {
-        let (mouse_x, mouse_y) = self.context.mouse_pos();
+        let (mouse_x, mouse_y) = self.context.rltk.mouse_pos();
         self.context.ext_set_bg(Point::new(mouse_x, mouse_y), RGB::named(rltk::MAGENTA));
     }
 
     fn draw_tooltip(&mut self) {
-        let (mouse_x, mouse_y) = self.context.mouse_pos();
+        let (mouse_x, mouse_y) = self.context.rltk.mouse_pos();
 
         TooltipDrawer { ecs: self.ecs, context: self.context }
             .draw_tooltip(mouse_x, mouse_y, TooltipOrientation::Auto);
