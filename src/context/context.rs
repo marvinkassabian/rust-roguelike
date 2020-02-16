@@ -120,4 +120,9 @@ impl<'a> Context<'a> {
             self.rltk.set(pos.x, pos.y, color.fg, color.bg, glyph);
         }
     }
+
+    pub fn get_screen_size(&self) -> (u32, u32) {
+        let (width, height) = self.rltk.get_char_size();
+        (width, height)
+    }
 }

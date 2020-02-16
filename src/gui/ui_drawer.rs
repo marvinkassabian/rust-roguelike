@@ -2,24 +2,39 @@ extern crate rltk;
 
 use specs::prelude::*;
 
-use crate::{CombatStats, Context, GameLog, MAP_HEIGHT, Player, TooltipDrawer, TooltipOrientation, WINDOW_HEIGHT, WINDOW_WIDTH};
+use crate::{CombatStats, Context, GameLog, Player, TooltipDrawer, TooltipOrientation};
 
 use self::rltk::{ColorPair, Point, Rect, RGB};
 
-pub fn draw_ui(ecs: &World, context: &mut Context) {
-    UiDrawer {
-        ecs,
-        context,
-    }.draw_ui()
-}
-
+pub const GAME_LOG_HEIGHT: i32 = 7;
 const HEALTH_TEXT_OFFSET: i32 = 12;
 const HEALTH_BAR_START: i32 = 28;
 const LOG_ENTRY_OFFSET: i32 = 2;
 
+pub fn draw_ui(ecs: &World, context: &mut Context) {
+    let (window_width, window_height) = context.get_screen_size();
+
+    UiDrawer {
+        ecs,
+        context,
+        dimensions: Dimensions {
+            map_screen_height: window_height as i32 - GAME_LOG_HEIGHT,
+            window_width: window_width as i32,
+            window_height: window_height as i32,
+        },
+    }.draw_ui()
+}
+
 struct UiDrawer<'a, 'b> {
     pub ecs: &'a World,
     pub context: &'a mut Context<'b>,
+    pub dimensions: Dimensions,
+}
+
+struct Dimensions {
+    pub map_screen_height: i32,
+    pub window_width: i32,
+    pub window_height: i32,
 }
 
 impl<'a, 'b> UiDrawer<'a, 'b> {
@@ -35,9 +50,9 @@ impl<'a, 'b> UiDrawer<'a, 'b> {
         self.context.draw_box(
             Rect::with_size(
                 0,
-                MAP_HEIGHT as i32,
-                (WINDOW_WIDTH - 1) as i32,
-                WINDOW_HEIGHT - MAP_HEIGHT - 1),
+                self.dimensions.map_screen_height as i32,
+                (self.dimensions.window_width - 1) as i32,
+                GAME_LOG_HEIGHT - 1),
             ColorPair::new(
                 RGB::named(rltk::WHITE),
                 RGB::named(rltk::BLACK)));
@@ -53,7 +68,7 @@ impl<'a, 'b> UiDrawer<'a, 'b> {
             self.context.print_color(
                 Point::new(
                     HEALTH_TEXT_OFFSET,
-                    MAP_HEIGHT),
+                    self.dimensions.map_screen_height),
                 &health,
                 ColorPair::new(
                     RGB::named(rltk::YELLOW),
@@ -63,8 +78,8 @@ impl<'a, 'b> UiDrawer<'a, 'b> {
             self.context.draw_bar_horizontal(
                 Point::new(
                     HEALTH_BAR_START,
-                    MAP_HEIGHT),
-                WINDOW_WIDTH - HEALTH_BAR_START - 1,
+                    self.dimensions.map_screen_height),
+                self.dimensions.window_width - HEALTH_BAR_START - 1,
                 stats.hp,
                 stats.max_hp,
                 ColorPair::new(
@@ -76,9 +91,9 @@ impl<'a, 'b> UiDrawer<'a, 'b> {
     fn draw_logs(&mut self) {
         let log = self.ecs.fetch::<GameLog>();
 
-        let mut y = WINDOW_HEIGHT - 2;
+        let mut y = self.dimensions.window_height - 2;
         for entry in log.entries.iter().skip(log.display_index as usize) {
-            if y >= MAP_HEIGHT + 1 {
+            if y >= self.dimensions.window_height - GAME_LOG_HEIGHT + 1 {
                 self.context.print(Point::new(LOG_ENTRY_OFFSET, y), &entry.get_formatted_message());
             } else {
                 break;

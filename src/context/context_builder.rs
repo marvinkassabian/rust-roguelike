@@ -2,7 +2,7 @@ use std::string::ToString;
 
 use rltk::{Console, console, Rltk, RltkBuilder, SimpleConsole, SparseConsole};
 
-use crate::{CONSOLE_INDEX, LAYER_COUNT, TITLE};
+use crate::{CONSOLE_INDEX, LAYER_COUNT};
 
 const LAYER_OFFSET_X: f32 = 0.1;
 const LAYER_OFFSET_Y: f32 = 0.1;
@@ -33,7 +33,7 @@ pub fn build_context(width: i32, height: i32, title: &str) -> Rltk {
 impl<'a> ContextBuilder<'a> {
     pub fn create_context(&self) -> Rltk {
         let mut context = RltkBuilder::new()
-            .with_title(TITLE)
+            .with_title(self.title)
             .with_dimensions(self.width, self.height)
             .with_tile_dimensions(TILE_WIDTH, TILE_HEIGHT)
             .with_resource_path(SHADER_PATH)

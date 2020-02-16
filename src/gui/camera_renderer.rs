@@ -1,7 +1,7 @@
 use rltk::{Algorithm2D, ColorPair, Console, Point, RGB};
 use specs::prelude::*;
 
-use crate::{Context, Map, Position, Renderable, TileType};
+use crate::{Context, GAME_LOG_HEIGHT, Map, Position, Renderable, TileType};
 
 const SHOW_BOUNDARIES: bool = true;
 const WALL_HEIGHT: usize = 2;
@@ -70,8 +70,7 @@ impl<'a, 'b> CameraRenderer<'a, 'b> {
         let renderables = self.ecs.read_storage::<Renderable>();
         let map = self.ecs.fetch::<Map>();
 
-        let map_width = map.width - 1;
-        let map_height = map.height - 1;
+        let (map_width, map_height) = (map.width - 1, map.height - 1);
 
         let mut data = (&positions, &renderables).join().collect::<Vec<_>>();
         data.sort_by(|a, b| {
@@ -104,7 +103,7 @@ impl<'a, 'b> CameraRenderer<'a, 'b> {
         let min_y = player_pos.y - center_y;
         let max_y = min_y + y_chars as i32;
 
-        (min_x, max_x, min_y, max_y)
+        (min_x, max_x, min_y, max_y - GAME_LOG_HEIGHT)
     }
 }
 

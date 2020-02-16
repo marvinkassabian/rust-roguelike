@@ -27,14 +27,14 @@ mod gui;
 mod game_log;
 mod context;
 
-pub const MAP_WIDTH: i32 = 80;
-pub const MAP_HEIGHT: i32 = 43;
-pub const WINDOW_WIDTH: i32 = 80;
-pub const WINDOW_HEIGHT: i32 = 50;
-
-const TITLE: &str = "Goblin War Party";
-
 fn main() {
+    const MAP_WIDTH: i32 = 80;
+    const MAP_HEIGHT: i32 = 43;
+    const WINDOW_WIDTH: i32 = 80;
+    const WINDOW_HEIGHT: i32 = 50;
+    const TITLE: &str = "Goblin War Party";
+
+
     let mut state = State { ecs: World::new(), systems: SysRunner::new() };
     state.ecs.insert(RunState::PreRun);
     state.ecs.insert(GameLog::new_with_first_log(format!("Welcome to {}", TITLE)));
