@@ -5,6 +5,10 @@ use crate::{BlocksTile, Map, Position};
 
 pub struct MapIndexingSystem;
 
+impl MapIndexingSystem {
+    pub const NAME: &'static str = "map_index";
+}
+
 impl<'a> System<'a> for MapIndexingSystem {
     type SystemData = (
         WriteExpect<'a, Map>,
@@ -25,8 +29,8 @@ impl<'a> System<'a> for MapIndexingSystem {
         for (entity, position) in (&entities, &position).join() {
             let idx = map.xy_idx(position.x, position.y);
 
-            let _p = blockers.get(entity);
-            if _p.is_some() {
+            let blocker = blockers.get(entity);
+            if blocker.is_some() {
                 map.blocked[idx] = true;
             }
 

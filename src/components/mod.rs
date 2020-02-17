@@ -23,7 +23,7 @@ pub struct Renderable {
 }
 
 #[derive(Component, Debug)]
-pub struct Player {}
+pub struct Player;
 
 #[derive(Component, Debug)]
 pub struct Viewshed {
@@ -33,7 +33,7 @@ pub struct Viewshed {
 }
 
 #[derive(Component, Debug)]
-pub struct Monster {}
+pub struct Monster;
 
 #[derive(Component, Debug)]
 pub struct Name {
@@ -41,7 +41,7 @@ pub struct Name {
 }
 
 #[derive(Component, Debug)]
-pub struct BlocksTile {}
+pub struct BlocksTile;
 
 #[derive(Component, Debug)]
 pub struct CombatStats {
@@ -57,7 +57,7 @@ pub struct SuffersDamage {
 }
 
 #[derive(Component, Debug)]
-pub struct Item {}
+pub struct Item;
 
 #[derive(Component, Debug)]
 pub struct InBackpack {
@@ -70,7 +70,7 @@ pub struct WantsToDrop {
 }
 
 #[derive(Component, Debug)]
-pub struct Consumable {}
+pub struct Consumable;
 
 #[derive(Component, Debug)]
 pub struct ProvidesHealing {
@@ -96,3 +96,23 @@ pub struct AreaOfEffect {
 pub struct Confusion {
     pub turns: i32,
 }
+
+#[derive(Component, Debug)]
+pub struct WantsToTakeTurn;
+
+#[derive(Component, Debug)]
+pub struct TakesTurn {
+    pub time_score: u32,
+}
+
+#[derive(Component, Debug)]
+pub struct GlobalTurn;
+
+#[derive(Component, Debug)]
+pub struct IsVisible;
+
+#[derive(Component, Debug)]
+pub struct CanMove {
+    pub speed: u32,
+}
+

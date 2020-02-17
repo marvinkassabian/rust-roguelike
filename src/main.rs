@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate specs_derive;
 
+use std::fmt::Display;
+
+use rltk::console;
 use specs::prelude::*;
 use specs::WorldExt;
 
@@ -14,6 +17,7 @@ pub use random::*;
 pub use spawner::*;
 pub use state::*;
 pub use systems::*;
+pub use turn_decider::*;
 
 rltk::add_wasm_support!();
 mod systems;
@@ -26,6 +30,7 @@ mod spawner;
 mod gui;
 mod game_log;
 mod context;
+mod turn_decider;
 
 fn main() {
     const MAP_WIDTH: i32 = 80;
@@ -36,7 +41,7 @@ fn main() {
 
 
     let mut state = State { ecs: World::new(), systems: SysRunner::new() };
-    state.ecs.insert(RunState::PreRun);
+    state.ecs.insert(RunStateHolder { run_state: RunState::PreRun });
     state.ecs.insert(GameLog::new_with_first_log(format!("Welcome to {}", TITLE)));
     state.ecs.insert(Random::new());
 
@@ -61,13 +66,29 @@ fn main() {
     state.ecs.register::<InflictsDamage>();
     state.ecs.register::<AreaOfEffect>();
     state.ecs.register::<Confusion>();
+    state.ecs.register::<WantsToTakeTurn>();
+    state.ecs.register::<TakesTurn>();
+    state.ecs.register::<GlobalTurn>();
+    state.ecs.register::<WantsToMove>();
+    state.ecs.register::<WantsToWait>();
+    state.ecs.register::<IsVisible>();
+    state.ecs.register::<CanMove>();
 
     let map = new_map_rooms_and_corridors(&mut state.ecs, MAP_WIDTH, MAP_HEIGHT);
 
+    spawner::spawn_global_turn(&mut state.ecs);
     spawner::spawn_map(&mut state.ecs, &map);
 
     state.ecs.insert(map);
 
     let context = build_context(WINDOW_WIDTH, WINDOW_HEIGHT, TITLE);
     rltk::main_loop(context, state);
+}
+
+pub fn console_log<S: Display>(message: S) {
+    const DEBUG: bool = true;
+
+    if DEBUG {
+        console::log(message);
+    }
 }

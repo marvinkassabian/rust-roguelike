@@ -1,8 +1,8 @@
 use std::string::ToString;
 
-use rltk::{Console, console, Rltk, RltkBuilder, SimpleConsole, SparseConsole};
+use rltk::{Console, Rltk, RltkBuilder, SimpleConsole, SparseConsole};
 
-use crate::{CONSOLE_INDEX, LAYER_COUNT};
+use crate::{CONSOLE_INDEX, console_log, LAYER_COUNT};
 
 const LAYER_OFFSET_X: f32 = 0.1;
 const LAYER_OFFSET_Y: f32 = 0.1;
@@ -108,7 +108,7 @@ impl<'a> ContextBuilder<'a> {
         let width_ratio = tile_width as f32 / TILE_WIDTH as f32;
         let height_ratio = tile_height as f32 / TILE_HEIGHT as f32;
 
-        console::log(format!("tile_width: {}, tile_height: {}", tile_width, tile_height));
+        console_log(format!("tile_width: {}, tile_height: {}", tile_width, tile_height));
 
         let font_path = format!("{}/terminal8x8.png", &SHADER_PATH.to_string());
         let font = context.register_font(rltk::Font::load(font_path, (tile_width, tile_height)));
@@ -132,7 +132,7 @@ impl<'a> ContextBuilder<'a> {
             offset_y -= ((height - self.height) / 2) as f32;
         }
 
-        console::log(format!("offset_x: {}, offset_y: {}", offset_x, offset_y));
+        console_log(format!("offset_x: {}, offset_y: {}", offset_x, offset_y));
 
         console.set_offset(offset_x, offset_y);
         if params.has_bg {

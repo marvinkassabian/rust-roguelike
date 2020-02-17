@@ -2,7 +2,7 @@ extern crate specs;
 
 use specs::prelude::*;
 
-use crate::{CombatStats, GameLog, Name, Player, RunState, SuffersDamage};
+use crate::{CombatStats, GameLog, Name, Player, RunStateHolder, SuffersDamage};
 
 pub struct DamageSystem;
 
@@ -13,7 +13,10 @@ impl<'a> System<'a> for DamageSystem {
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (mut stats, mut damage) = data;
+        let (
+            mut stats,
+            mut damage
+        ) = data;
 
         for (mut stats, damage) in (&mut stats, &damage).join() {
             stats.hp -= damage.amount;
@@ -25,12 +28,6 @@ impl<'a> System<'a> for DamageSystem {
 
 
 pub fn delete_the_dead(ecs: &mut World) {
-    let run_state = *ecs.fetch::<RunState>();
-
-    if !run_state.is_turn() {
-        return;
-    }
-
     let mut dead: Vec<Entity> = Vec::new();
 
     {
@@ -39,6 +36,7 @@ pub fn delete_the_dead(ecs: &mut World) {
         let entities = ecs.entities();
         let players = ecs.read_storage::<Player>();
         let mut game_log = ecs.write_resource::<GameLog>();
+        let run_state_holder = ecs.read_resource::<RunStateHolder>();
 
         for (entity, stats) in (&entities, &combat_stats).join() {
             if stats.hp <= 0 {
@@ -53,7 +51,9 @@ pub fn delete_the_dead(ecs: &mut World) {
                         dead.push(entity);
                     }
                     Some(_player) => {
-                        game_log.add("You are dead".to_string());
+                        if run_state_holder.run_state.is_turn() {
+                            game_log.add("You are dead".to_string());
+                        }
                     }
                 }
             }

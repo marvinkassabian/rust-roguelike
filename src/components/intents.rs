@@ -16,7 +16,15 @@ pub struct WantsToUseItem {
     pub target: Option<Point>,
 }
 
-#[derive(Component, Debug, Clone)]
+#[derive(Component, Debug)]
 pub struct WantsToMelee {
     pub target: Entity,
 }
+
+#[derive(Component, Debug)]
+pub struct WantsToMove {
+    pub destination: Point,
+}
+
+#[derive(Component, Debug)]
+pub struct WantsToWait;

@@ -1,11 +1,12 @@
-use rltk::{console, RandomNumberGenerator};
+use rltk::RandomNumberGenerator;
+
+use crate::console_log;
 
 pub struct Random {
     rng: RandomNumberGenerator,
 }
 
-const DEBUG: bool = true;
-const DEBUG_SEED: u64 = 6836765706277375599;
+const DEBUG_SEED: Option<u64> = Some(6836765706277375599);
 
 impl Random {
     pub fn new() -> Random {
@@ -23,11 +24,11 @@ impl Random {
     }
 
     fn get_rng() -> RandomNumberGenerator {
-        if DEBUG {
-            RandomNumberGenerator::seeded(DEBUG_SEED)
+        if DEBUG_SEED.is_some() {
+            RandomNumberGenerator::seeded(DEBUG_SEED.unwrap())
         } else {
             let random_seed = Random::get_random_seed();
-            console::log(format!("random seed: {}", random_seed));
+            console_log(format!("random seed: {}", random_seed));
 
             RandomNumberGenerator::seeded(random_seed)
         }

@@ -2,7 +2,7 @@ use rltk::{Algorithm2D, Point, Rect, RGB};
 use specs::{Entity, World};
 use specs::prelude::*;
 
-use crate::{AreaOfEffect, BlocksTile, CombatStats, Confusion, Consumable, InBackpack, InflictsDamage, Item, Map, Monster, Name, Player, Position, ProvidesHealing, Random, Ranged, Renderable, Viewshed};
+use crate::{AreaOfEffect, BlocksTile, CanMove, CombatStats, Confusion, Consumable, GlobalTurn, GlobalTurnTimeScore, InBackpack, InflictsDamage, Item, Map, Monster, Name, Player, Position, ProvidesHealing, Random, Ranged, Renderable, TakesTurn, Viewshed};
 
 const MAX_MONSTERS: i32 = 4;
 const MAX_ITEMS: i32 = 2;
@@ -18,7 +18,7 @@ pub fn player(ecs: &mut World, x: i32, y: i32) -> Entity {
             bg: RGB::named(rltk::BLACK),
             render_order: 0,
         })
-        .with(Player {})
+        .with(Player)
         .with(Viewshed {
             visible_tiles: Vec::new(),
             range: 8,
@@ -31,6 +31,8 @@ pub fn player(ecs: &mut World, x: i32, y: i32) -> Entity {
             defense: 2,
             power: 5,
         })
+        .with(TakesTurn { time_score: 0 })
+        .with(CanMove { speed: 20 })
         .build()
 }
 
@@ -47,6 +49,8 @@ pub fn random_monster(ecs: &mut World, x: i32, y: i32) {
         goblin(ecs, x, y)
     }
 }
+
+static mut COUNTER: i32 = 1;
 
 pub fn orc(ecs: &mut World, x: i32, y: i32) {
     monster(ecs, x, y, rltk::to_cp437('o'), "Orc")
@@ -66,21 +70,25 @@ fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: u8, name: S) {
             bg: RGB::named(rltk::BLACK),
             render_order: 1,
         })
-        .with(Monster {})
+        .with(Monster)
         .with(Viewshed {
             visible_tiles: Vec::new(),
             range: 8,
             dirty: true,
         })
-        .with(Name { name: name.to_string() })
-        .with(BlocksTile {})
+        .with(Name { name: format!("{} #{}", name.to_string(), unsafe { COUNTER }) })
+        .with(BlocksTile)
         .with(CombatStats {
             max_hp: 16,
             hp: 16,
             defense: 1,
             power: 4,
         })
+        .with(TakesTurn { time_score: 0 })
+        .with(CanMove { speed: 50 })
         .build();
+
+    unsafe { COUNTER += 1 };
 }
 
 pub fn random_item(ecs: &mut World, x: i32, y: i32) {
@@ -108,8 +116,8 @@ pub fn health_potion(ecs: &mut World, x: i32, y: i32) {
             render_order: 2,
         })
         .with(Name { name: "Health Potion".to_string() })
-        .with(Item {})
-        .with(Consumable {})
+        .with(Item)
+        .with(Consumable)
         .with(ProvidesHealing {
             heal_amount: 8
         })
@@ -132,8 +140,8 @@ pub fn magic_missile_scroll_base(ecs: &mut World) -> EntityBuilder {
             render_order: 2,
         })
         .with(Name { name: "Magic Missile Scroll".to_string() })
-        .with(Item {})
-        .with(Consumable {})
+        .with(Item)
+        .with(Consumable)
         .with(Ranged { range: 6 })
         .with(InflictsDamage { damage: 8 })
 }
@@ -154,8 +162,8 @@ fn confusion_scroll(ecs: &mut World, x: i32, y: i32) {
             render_order: 2,
         })
         .with(Name { name: "Confusion Scroll".to_string() })
-        .with(Item {})
-        .with(Consumable {})
+        .with(Item)
+        .with(Consumable)
         .with(Ranged { range: 6 })
         .with(Confusion { turns: 4 })
         .build();
@@ -187,8 +195,8 @@ fn fireball_scroll_base(ecs: &mut World) -> EntityBuilder {
             render_order: 2,
         })
         .with(Name { name: "Fireball Scroll".to_string() })
-        .with(Item {})
-        .with(Consumable {})
+        .with(Item)
+        .with(Consumable)
         .with(Ranged { range: 6 })
         .with(InflictsDamage { damage: 20 })
         .with(AreaOfEffect { radius: 3 })
@@ -253,4 +261,15 @@ fn get_spawn_points(map: &Map, rng: &mut Random, count: i32, room: &Rect) -> Vec
     }
 
     spawn_points
+}
+
+pub fn spawn_global_turn(ecs: &mut World) {
+    ecs
+        .create_entity()
+        .with(Name { name: "Global Turn".to_string() })
+        .with(GlobalTurn)
+        .with(TakesTurn { time_score: 0 })
+        .build();
+
+    ecs.insert(GlobalTurnTimeScore { time_score: 0 });
 }
