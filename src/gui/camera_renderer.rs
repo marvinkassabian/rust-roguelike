@@ -1,10 +1,10 @@
 use rltk::{Algorithm2D, ColorPair, Console, Point, RGB};
 use specs::prelude::*;
 
-use crate::{Context, GAME_LOG_HEIGHT, Map, Position, Renderable, TileType};
+use crate::{Context, DEBUG, GAME_LOG_HEIGHT, Map, Position, Renderable, TileType};
 
-const SHOW_BOUNDARIES: bool = true;
-const WALL_HEIGHT: usize = 2;
+const SHOW_BOUNDARIES: bool = DEBUG;
+const WALL_HEIGHT: usize = 4;
 const ENTITY_HEIGHT: usize = 2;
 
 pub struct CameraRenderer<'a, 'b> {

@@ -3,7 +3,7 @@ extern crate specs;
 
 use specs::prelude::*;
 
-use crate::{console_log, GlobalTurn, IsVisible, Name, Player, RunState, TakesTurn, WantsToTakeTurn};
+use crate::{console_log, IsVisible, Name, Player, RunState, TakesTurn, WantsToTakeTurn};
 
 pub struct TurnDecider<'a> {
     pub ecs: &'a World,
@@ -31,14 +31,12 @@ impl<'a> TurnDecider<'a> {
 
         let (
             mut takes_turn,
-            global_turn,
             player,
             entities,
             names,
             is_visible,
         ) = (
             self.ecs.write_storage::<TakesTurn>(),
-            self.ecs.read_storage::<GlobalTurn>(),
             self.ecs.read_storage::<Player>(),
             self.ecs.entities(),
             self.ecs.read_storage::<Name>(),
@@ -58,10 +56,9 @@ impl<'a> TurnDecider<'a> {
 
         for (entity, _, _name) in data.iter() {
             let is_visible = is_visible.get(*entity).is_some();
-            let is_global = global_turn.get(*entity).is_some();
             let is_player = player.get(*entity).is_some();
 
-            if is_global || is_player || is_visible {
+            if is_player || is_visible {
                 if is_first {
                     turn_taking_entities.push(*entity);
                     is_player_turn = is_player;

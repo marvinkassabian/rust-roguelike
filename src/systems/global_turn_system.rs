@@ -3,7 +3,7 @@ extern crate specs;
 
 use specs::prelude::*;
 
-use crate::{GlobalTurn, GlobalTurnTimeScore, TakesTurn, WantsToTakeTurn};
+use crate::{console_log, GlobalTurn, GlobalTurnTimeScore, TakesTurn, WantsToTakeTurn};
 
 pub struct GlobalTurnSystem;
 
@@ -39,6 +39,8 @@ impl<'a> System<'a> for GlobalTurnSystem {
             takes_turn.time_score += 100;
 
             global_turn_time_score.time_score = takes_turn.time_score;
+
+            console_log(format!("       GlobalTurn time_score ({})", global_turn_time_score.time_score));
         }
     }
 }

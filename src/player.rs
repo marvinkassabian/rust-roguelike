@@ -21,6 +21,7 @@ pub fn player_input(state: &mut State, context: &mut Context) -> RunState {
             VirtualKeyCode::Down |
             VirtualKeyCode::K => try_move_player(0, 1, &mut state.ecs),
 
+            /*
             VirtualKeyCode::Y => try_move_player(-1, -1, &mut state.ecs),
 
             VirtualKeyCode::U => try_move_player(1, -1, &mut state.ecs),
@@ -28,7 +29,7 @@ pub fn player_input(state: &mut State, context: &mut Context) -> RunState {
             VirtualKeyCode::N => try_move_player(1, 1, &mut state.ecs),
 
             VirtualKeyCode::B => try_move_player(-1, 1, &mut state.ecs),
-
+            */
             VirtualKeyCode::G => get_item(&mut state.ecs),
             VirtualKeyCode::I => return RunState::ShowInventory,
             VirtualKeyCode::D => return RunState::ShowDropItem,

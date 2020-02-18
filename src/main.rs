@@ -32,7 +32,7 @@ mod game_log;
 mod context;
 mod turn_decider;
 
-pub const DEBUG: bool = false;
+pub const DEBUG: bool = true;
 
 fn main() {
     const MAP_WIDTH: i32 = 80;

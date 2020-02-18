@@ -151,16 +151,19 @@ impl BaseMap for Map {
         let pt = self.index_to_point2d(idx);
 
         const CARDINAL_DISTANCE: f32 = 1.0;
-        const DIAGONAL_DISTANCE: f32 = 1.454;
+        //const DIAGONAL_DISTANCE: f32 = 1.454;
         let deltas = [
             (0, -1, CARDINAL_DISTANCE),
             (0, 1, CARDINAL_DISTANCE),
             (1, 0, CARDINAL_DISTANCE),
             (-1, 0, CARDINAL_DISTANCE),
+            /*
             (1, -1, DIAGONAL_DISTANCE),
             (1, 1, DIAGONAL_DISTANCE),
             (-1, -1, DIAGONAL_DISTANCE),
-            (-1, 1, DIAGONAL_DISTANCE)];
+            (-1, 1, DIAGONAL_DISTANCE),
+            */
+        ];
 
         for delta in deltas.iter() {
             let

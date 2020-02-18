@@ -1,5 +1,5 @@
-pub const LAYER_COUNT: usize = 1;
-pub static CONSOLE_INDEX: ConsoleIndex = ConsoleIndex { base: 0, layers: [1], ui: LAYER_COUNT + 1 };
+pub const LAYER_COUNT: usize = 3;
+pub static CONSOLE_INDEX: ConsoleIndex = ConsoleIndex { base: 0, layers: [1, 2, 3], ui: LAYER_COUNT + 1 };
 
 pub struct ConsoleIndex { pub base: usize, pub layers: [usize; LAYER_COUNT], pub ui: usize }
 
