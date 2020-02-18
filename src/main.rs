@@ -32,6 +32,8 @@ mod game_log;
 mod context;
 mod turn_decider;
 
+pub const DEBUG: bool = false;
+
 fn main() {
     const MAP_WIDTH: i32 = 80;
     const MAP_HEIGHT: i32 = 43;
@@ -73,6 +75,7 @@ fn main() {
     state.ecs.register::<WantsToWait>();
     state.ecs.register::<IsVisible>();
     state.ecs.register::<CanMove>();
+    state.ecs.register::<CanMelee>();
 
     let map = new_map_rooms_and_corridors(&mut state.ecs, MAP_WIDTH, MAP_HEIGHT);
 
@@ -86,8 +89,6 @@ fn main() {
 }
 
 pub fn console_log<S: Display>(message: S) {
-    const DEBUG: bool = true;
-
     if DEBUG {
         console::log(message);
     }

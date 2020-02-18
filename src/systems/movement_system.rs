@@ -38,7 +38,7 @@ impl<'a> System<'a> for MovementSystem {
         ) = data;
 
         for (entity, wants_to_move, mut takes_turn, mut position, mut viewshed, can_move) in (&entities, &wants_to_move, &mut takes_turn, &mut positions, &mut viewsheds, &can_move).join() {
-            takes_turn.time_score += can_move.speed;
+            takes_turn.time_score += can_move.time_cost;
 
             let new_position = wants_to_move.destination;
 

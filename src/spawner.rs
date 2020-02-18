@@ -2,7 +2,7 @@ use rltk::{Algorithm2D, Point, Rect, RGB};
 use specs::{Entity, World};
 use specs::prelude::*;
 
-use crate::{AreaOfEffect, BlocksTile, CanMove, CombatStats, Confusion, Consumable, GlobalTurn, GlobalTurnTimeScore, InBackpack, InflictsDamage, Item, Map, Monster, Name, Player, Position, ProvidesHealing, Random, Ranged, Renderable, TakesTurn, Viewshed};
+use crate::{AreaOfEffect, BlocksTile, CanMelee, CanMove, CombatStats, Confusion, Consumable, DEBUG, GlobalTurn, GlobalTurnTimeScore, InBackpack, InflictsDamage, Item, Map, Monster, Name, Player, Position, ProvidesHealing, Random, Ranged, Renderable, TakesTurn, Viewshed};
 
 const MAX_MONSTERS: i32 = 4;
 const MAX_ITEMS: i32 = 2;
@@ -32,7 +32,8 @@ pub fn player(ecs: &mut World, x: i32, y: i32) -> Entity {
             power: 5,
         })
         .with(TakesTurn { time_score: 0 })
-        .with(CanMove { speed: 20 })
+        .with(CanMove { time_cost: 20 })
+        .with(CanMelee { time_cost: 110 })
         .build()
 }
 
@@ -61,7 +62,7 @@ pub fn goblin(ecs: &mut World, x: i32, y: i32) {
 }
 
 fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: u8, name: S) {
-    ecs
+    let monster_builder = ecs
         .create_entity()
         .with(Position { x, y })
         .with(Renderable {
@@ -76,7 +77,6 @@ fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: u8, name: S) {
             range: 8,
             dirty: true,
         })
-        .with(Name { name: format!("{} #{}", name.to_string(), unsafe { COUNTER }) })
         .with(BlocksTile)
         .with(CombatStats {
             max_hp: 16,
@@ -85,10 +85,18 @@ fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: u8, name: S) {
             power: 4,
         })
         .with(TakesTurn { time_score: 0 })
-        .with(CanMove { speed: 50 })
-        .build();
+        .with(CanMove { time_cost: 30 })
+        .with(CanMelee { time_cost: 180 });
 
-    unsafe { COUNTER += 1 };
+
+    if DEBUG {
+        unsafe {
+            monster_builder.with(Name { name: format!("{} #{}", name.to_string(), COUNTER) }).build();
+            COUNTER += 1
+        };
+    } else {
+        monster_builder.with(Name { name: name.to_string() }).build();
+    }
 }
 
 pub fn random_item(ecs: &mut World, x: i32, y: i32) {

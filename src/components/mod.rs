@@ -113,6 +113,10 @@ pub struct IsVisible;
 
 #[derive(Component, Debug)]
 pub struct CanMove {
-    pub speed: u32,
+    pub time_cost: u32,
 }
 
+#[derive(Component, Debug)]
+pub struct CanMelee {
+    pub time_cost: u32,
+}

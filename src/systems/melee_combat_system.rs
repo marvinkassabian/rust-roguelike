@@ -2,7 +2,7 @@ extern crate specs;
 
 use specs::prelude::*;
 
-use crate::{CombatStats, GameLog, Name, SuffersDamage, TakesTurn, WantsToMelee};
+use crate::{CanMelee, CombatStats, GameLog, Name, SuffersDamage, TakesTurn, WantsToMelee};
 
 pub struct MeleeCombatSystem;
 
@@ -15,6 +15,7 @@ impl<'a> System<'a> for MeleeCombatSystem {
         ReadStorage<'a, CombatStats>,
         WriteStorage<'a, SuffersDamage>,
         WriteStorage<'a, TakesTurn>,
+        ReadStorage<'a, CanMelee>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -26,10 +27,11 @@ impl<'a> System<'a> for MeleeCombatSystem {
             combat_stats,
             mut suffers_damage,
             mut takes_turn,
+            can_melee,
         ) = data;
 
-        for (_entity, wants_melee, name, stats, mut takes_turn) in (&entities, &wants_melee, &names, &combat_stats, &mut takes_turn).join() {
-            takes_turn.time_score += 150;
+        for (_entity, wants_melee, name, stats, mut takes_turn, can_melee) in (&entities, &wants_melee, &names, &combat_stats, &mut takes_turn, &can_melee).join() {
+            takes_turn.time_score += can_melee.time_cost;
 
             if stats.hp <= 0 {
                 continue;

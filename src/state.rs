@@ -169,7 +169,8 @@ pub struct SysRunner {
 impl SysRunner {
     pub fn new() -> Self {
         let dispatcher = DispatcherBuilder::new()
-            .with(MovementSystem, MovementSystem::NAME, &[])
+            .with(MapIndexingSystem, "map_index_2", &[])
+            .with(MovementSystem, MovementSystem::NAME, &["map_index_2"])
             .with(MapIndexingSystem, MapIndexingSystem::NAME, &[MovementSystem::NAME])
             .with(VisibilitySystem, "vis", &[MapIndexingSystem::NAME])
             .with(MonsterAI, "mob", &[MapIndexingSystem::NAME])
@@ -180,7 +181,6 @@ impl SysRunner {
             .with(ItemUseSystem, "use_item", &[MapIndexingSystem::NAME])
             .with(ItemDropSystem, "drop", &[MapIndexingSystem::NAME])
             .with(DamageSystem, "damage", &["melee_combat", "use_item"])
-            .with(MapIndexingSystem, "map_index_2", &["damage"])
             .build();
 
 
