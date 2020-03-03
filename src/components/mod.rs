@@ -120,3 +120,8 @@ pub struct CanMove {
 pub struct CanMelee {
     pub time_cost: u32,
 }
+
+#[derive(Component, Debug)]
+pub struct ParticleLifetime {
+    pub lifetime_ms: f32
+}

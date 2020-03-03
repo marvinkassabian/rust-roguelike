@@ -40,7 +40,7 @@ impl<'a> System<'a> for ItemUseSystem {
             inflicts_damage,
             mut suffers_damage,
             aoe,
-            confusion,
+            mut confusion,
         ) = data;
 
         for (user_entity, use_item) in (&entities, &wants_to_use_items).join() {
@@ -125,15 +125,19 @@ impl<'a> System<'a> for ItemUseSystem {
             let mut mobs_to_confuse = Vec::new();
 
             let confusion_item = confusion.get(item_entity);
-            if let Some(_confusion_item) = confusion_item {
+            if let Some(confusion_item) = confusion_item {
                 for target in stat_targets.iter() {
-                    mobs_to_confuse.push(target);
+                    mobs_to_confuse.push((target, confusion_item.turns));
                     if user_entity == *player_entity {
                         let item_name = &names.get(item_entity).unwrap().name;
                         let mob_name = &names.get(**target).unwrap().name;
                         game_log.add(format!("You use {} on {}, confusing them.", item_name, mob_name));
                     }
                 }
+            }
+
+            for (mob, turns) in mobs_to_confuse.iter() {
+                confusion.insert(***mob, Confusion { turns: *turns }).expect("Unable to insert status");
             }
 
             if used_item {

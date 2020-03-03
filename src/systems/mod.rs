@@ -5,6 +5,7 @@ pub use map_indexing_system::*;
 pub use melee_combat_system::*;
 pub use monster_ai_system::*;
 pub use movement_system::*;
+pub use particle_system::*;
 pub use visibility_system::*;
 pub use wait_system::*;
 
@@ -17,3 +18,4 @@ pub mod melee_combat_system;
 pub mod inventory;
 pub mod global_turn_system;
 pub mod movement_system;
+pub mod particle_system;

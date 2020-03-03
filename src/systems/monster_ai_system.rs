@@ -4,7 +4,7 @@ extern crate specs;
 use rltk::Point;
 use specs::prelude::*;
 
-use crate::{Map, Monster, Position, Random, Viewshed, WantsToMelee, WantsToMove, WantsToTakeTurn, WantsToWait};
+use crate::{Confusion, Map, Monster, Position, RNG, Viewshed, WantsToMelee, WantsToMove, WantsToTakeTurn, WantsToWait};
 
 use self::rltk::Algorithm2D;
 
@@ -23,7 +23,7 @@ impl<'a> System<'a> for MonsterAI {
         WriteStorage<'a, WantsToMove>,
         ReadStorage<'a, Viewshed>,
         WriteStorage<'a, WantsToWait>,
-        WriteExpect<'a, Random>,
+        ReadStorage<'a, Confusion>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -39,7 +39,7 @@ impl<'a> System<'a> for MonsterAI {
             mut wants_to_move,
             viewsheds,
             mut wants_to_wait,
-            mut rng,
+            confusions,
         ) = data;
 
         let map = &mut *map;
@@ -47,9 +47,14 @@ impl<'a> System<'a> for MonsterAI {
         let player_idx = map.point2d_to_index(player_pos);
 
         for (entity, _monster, position, _turn, viewshed) in (&entities, &monster, &positions, &wants_to_take_turn, &viewsheds).join() {
+            if confusions.get(entity).is_some() {
+                wants_to_wait.insert(entity, WantsToWait).expect("Unable to insert intent");
+                continue;
+            }
+
             let distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(position.x, position.y), player_pos);
 
-            const IS_ADJACENT_DISTANCE: f32 = 1.5;
+            const IS_ADJACENT_DISTANCE: f32 = 1.01;
 
             if distance < IS_ADJACENT_DISTANCE {
                 wants_to_melee.insert(entity, WantsToMelee { target: *player_entity }).expect("Unable to insert intent");
@@ -69,7 +74,7 @@ impl<'a> System<'a> for MonsterAI {
             } else {
                 let delta: (i32, i32);
 
-                match rng.roll_die(4) {
+                match RNG.roll_die(4) {
                     1 => delta = (1, 0),
                     2 => delta = (-1, 0),
                     3 => delta = (0, 1),
@@ -79,7 +84,7 @@ impl<'a> System<'a> for MonsterAI {
 
                 let next_step = Point::new(position.x + delta.0, position.y + delta.1);
 
-                if rng.roll_die(7) > 3 {
+                if RNG.roll_die(7) > 1 {
                     wants_to_move.insert(entity, WantsToMove { destination: next_step }).expect("Unable to insert intent");
                 } else {
                     wants_to_wait.insert(entity, WantsToWait).expect("Unable to insert intent");

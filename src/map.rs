@@ -3,7 +3,7 @@ use std::cmp::{max, min};
 use rltk::{Algorithm2D, BaseMap, Point, Rect};
 use specs::prelude::*;
 
-use crate::Random;
+use crate::RNG;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum TileType {
@@ -190,8 +190,7 @@ impl BaseMap for Map {
 
 /// Makes a new map using the algorithm from http://rogueliketutorials.com/tutorials/tcod/part-3/
 /// This gives a handful of random rooms and corridors joining them together.
-pub fn new_map_rooms_and_corridors(ecs: &mut World, width: i32, height: i32) -> Map {
-    let mut rng = ecs.write_resource::<Random>();
+pub fn new_map_rooms_and_corridors(width: i32, height: i32) -> Map {
     let mut map = Map::new(width, height, TileType::Wall);
 
     const MAX_ROOMS: i32 = 30;
@@ -200,10 +199,10 @@ pub fn new_map_rooms_and_corridors(ecs: &mut World, width: i32, height: i32) -> 
     const FRAME_WIDTH: i32 = 1;
 
     for _i in 0..MAX_ROOMS {
-        let w = rng.range(MIN_SIZE, MAX_SIZE);
-        let h = rng.range(MIN_SIZE, MAX_SIZE);
-        let x = rng.range(FRAME_WIDTH, map.width - w - FRAME_WIDTH);
-        let y = rng.range(FRAME_WIDTH, map.height - h - FRAME_WIDTH);
+        let w = RNG.range(MIN_SIZE, MAX_SIZE);
+        let h = RNG.range(MIN_SIZE, MAX_SIZE);
+        let x = RNG.range(FRAME_WIDTH, map.width - w - FRAME_WIDTH);
+        let y = RNG.range(FRAME_WIDTH, map.height - h - FRAME_WIDTH);
         let new_room = Rect::with_size(x, y, w, h);
 
         let ok = map.rooms.iter().all(|other_room| !new_room.intersect(other_room));
@@ -217,7 +216,7 @@ pub fn new_map_rooms_and_corridors(ecs: &mut World, width: i32, height: i32) -> 
                 let new = new_room.center();
                 let prev = prev_room.center();
 
-                if rng.flip_coin() {
+                if RNG.flip_coin() {
                     apply_horizontal_tunnel(&mut map, prev.x, new.x, prev.y);
                     apply_vertical_tunnel(&mut map, prev.y, new.y, new.x);
                 } else {

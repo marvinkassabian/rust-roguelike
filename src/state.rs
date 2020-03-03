@@ -2,7 +2,7 @@ use rltk::{GameState, render_draw_buffer, Rltk};
 use specs::prelude::*;
 use specs::WorldExt;
 
-use crate::{AreaOfEffect, Context, DamageSystem, decide_turn, delete_the_dead, GlobalTurnSystem, gui, ItemCollectionSystem, ItemDropSystem, ItemMenuResult, ItemUseSystem, MapIndexingSystem, MeleeCombatSystem, MonsterAI, MovementSystem, player_input, Ranged, RangedTargetDrawerSettings, RangedTargetResult, render_camera, VisibilitySystem, WaitSystem, WantsToDrop, WantsToUseItem};
+use crate::{AreaOfEffect, Context, cull_dead_particles, DamageSystem, decide_turn, delete_the_dead, GlobalTurnSystem, gui, ItemCollectionSystem, ItemDropSystem, ItemMenuResult, ItemUseSystem, MapIndexingSystem, MeleeCombatSystem, MonsterAI, MovementSystem, ParticleSpawnSystem, player_input, Ranged, RangedTargetDrawerSettings, RangedTargetResult, render_camera, VisibilitySystem, WaitSystem, WantsToDrop, WantsToUseItem};
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum RunState {
@@ -55,6 +55,8 @@ impl GameState for State {
     fn tick(&mut self, rltk: &mut Rltk) {
         let context = &mut Context::new(rltk);
         context.cls_all();
+        cull_dead_particles(&mut self.ecs, context);
+
 
         render_camera(&self.ecs, context);
         gui::draw_ui(&self.ecs, context);
@@ -181,6 +183,7 @@ impl SysRunner {
             .with(ItemUseSystem, "use_item", &[MapIndexingSystem::NAME])
             .with(ItemDropSystem, "drop", &[MapIndexingSystem::NAME])
             .with(DamageSystem, "damage", &["melee_combat", "use_item"])
+            .with(ParticleSpawnSystem, "particle", &[MapIndexingSystem::NAME])
             .build();
 
 

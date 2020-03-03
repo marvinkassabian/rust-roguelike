@@ -2,7 +2,7 @@ use rltk::{Algorithm2D, Point, Rect, RGB};
 use specs::{Entity, World};
 use specs::prelude::*;
 
-use crate::{AreaOfEffect, BlocksTile, CanMelee, CanMove, CombatStats, Confusion, Consumable, DEBUG, GlobalTurn, GlobalTurnTimeScore, InBackpack, InflictsDamage, Item, Map, Monster, Name, Player, Position, ProvidesHealing, Random, Ranged, Renderable, TakesTurn, Viewshed};
+use crate::{AreaOfEffect, BlocksTile, CanMelee, CanMove, CombatStats, Confusion, Consumable, DEBUG, GlobalTurn, GlobalTurnTimeScore, InBackpack, InflictsDamage, Item, Map, Monster, Name, Player, Position, ProvidesHealing, Ranged, Renderable, RNG, TakesTurn, Viewshed};
 
 const MAX_MONSTERS: i32 = 4;
 const MAX_ITEMS: i32 = 2;
@@ -41,8 +41,7 @@ pub fn player(ecs: &mut World, x: i32, y: i32) -> Entity {
 pub fn random_monster(ecs: &mut World, x: i32, y: i32) {
     let coin_flip: bool;
     {
-        let mut rng = ecs.write_resource::<Random>();
-        coin_flip = rng.flip_coin();
+        coin_flip = RNG.flip_coin();
     }
     if coin_flip {
         orc(ecs, x, y)
@@ -102,8 +101,7 @@ fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: u8, name: S) {
 pub fn random_item(ecs: &mut World, x: i32, y: i32) {
     let roll: i32;
     {
-        let mut rng = ecs.write_resource::<Random>();
-        roll = rng.roll_die(4);
+        roll = RNG.roll_die(4);
     }
     match roll {
         1 => { health_potion(ecs, x, y) }
@@ -161,8 +159,19 @@ pub fn fireball_scroll(ecs: &mut World, x: i32, y: i32) {
 }
 
 fn confusion_scroll(ecs: &mut World, x: i32, y: i32) {
-    ecs.create_entity()
+    confusion_scroll_base(ecs)
         .with(Position { x, y })
+        .build();
+}
+
+fn confusion_scroll_in_pack(ecs: &mut World, owner: Entity) {
+    confusion_scroll_base(ecs)
+        .with(InBackpack { owner })
+        .build();
+}
+
+fn confusion_scroll_base(ecs: &mut World) -> EntityBuilder {
+    ecs.create_entity()
         .with(Renderable {
             glyph: rltk::to_cp437(')'),
             fg: RGB::named(rltk::PINK),
@@ -174,14 +183,11 @@ fn confusion_scroll(ecs: &mut World, x: i32, y: i32) {
         .with(Consumable)
         .with(Ranged { range: 6 })
         .with(Confusion { turns: 4 })
-        .build();
 }
 
 fn magic_missile_scroll_in_pack(ecs: &mut World, owner: Entity) {
     magic_missile_scroll_base(ecs)
-        .with(InBackpack {
-            owner,
-        })
+        .with(InBackpack { owner })
         .build();
 }
 
@@ -216,9 +222,10 @@ pub fn spawn_map(ecs: &mut World, map: &Map) {
     ecs.insert(Point::new(pt.x, pt.y));
     let player = player(ecs, pt.x, pt.y);
 
+    confusion_scroll_in_pack(ecs, player);
     magic_missile_scroll_in_pack(ecs, player);
 
-    for _ in 0..5 {
+    for _ in 0..3 {
         fireball_scroll_in_pack(ecs, player);
     }
 
@@ -234,12 +241,11 @@ fn spawn_room(ecs: &mut World, map: &Map, room: &Rect) {
     let monster_spawn_points: Vec<usize>;
     let item_spawn_points: Vec<usize>;
     {
-        let mut rng = ecs.write_resource::<Random>();
-        let monster_count = rng.inclusive_range(0, MAX_MONSTERS + DROP_OFFSET) - DROP_OFFSET;
-        let item_count = rng.inclusive_range(0, MAX_ITEMS + DROP_OFFSET) - DROP_OFFSET;
+        let monster_count = RNG.inclusive_range(0, MAX_MONSTERS + DROP_OFFSET) - DROP_OFFSET;
+        let item_count = RNG.inclusive_range(0, MAX_ITEMS + DROP_OFFSET) - DROP_OFFSET;
 
-        monster_spawn_points = get_spawn_points(map, &mut rng, monster_count, room);
-        item_spawn_points = get_spawn_points(map, &mut rng, item_count, room);
+        monster_spawn_points = get_spawn_points(map, monster_count, room);
+        item_spawn_points = get_spawn_points(map, item_count, room);
     }
 
     for idx in monster_spawn_points {
@@ -253,13 +259,13 @@ fn spawn_room(ecs: &mut World, map: &Map, room: &Rect) {
     }
 }
 
-fn get_spawn_points(map: &Map, rng: &mut Random, count: i32, room: &Rect) -> Vec<usize> {
+fn get_spawn_points(map: &Map, count: i32, room: &Rect) -> Vec<usize> {
     let mut spawn_points: Vec<usize> = Vec::new();
     for _i in 0..count {
         let mut added = false;
         while !added {
-            let x = room.x1 + rng.range(1, i32::abs(room.x2 - room.x1) - 2);
-            let y = room.y1 + rng.range(1, i32::abs(room.y2 - room.y1) - 2);
+            let x = room.x1 + RNG.range(1, i32::abs(room.x2 - room.x1) - 2);
+            let y = room.y1 + RNG.range(1, i32::abs(room.y2 - room.y1) - 2);
             let idx = map.xy_idx(x, y);
             if !spawn_points.contains(&idx) {
                 spawn_points.insert(0, idx);

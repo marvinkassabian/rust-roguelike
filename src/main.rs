@@ -1,3 +1,5 @@
+#[macro_use(lazy_static)]
+extern crate lazy_static;
 #[macro_use]
 extern crate specs_derive;
 
@@ -45,7 +47,7 @@ fn main() {
     let mut state = State { ecs: World::new(), systems: SysRunner::new() };
     state.ecs.insert(RunStateHolder { run_state: RunState::PreRun });
     state.ecs.insert(GameLog::new_with_first_log(format!("Welcome to {}", TITLE)));
-    state.ecs.insert(Random::new());
+    state.ecs.insert(ParticleBuilder::new());
 
     state.ecs.register::<Position>();
     state.ecs.register::<Renderable>();
@@ -76,8 +78,9 @@ fn main() {
     state.ecs.register::<IsVisible>();
     state.ecs.register::<CanMove>();
     state.ecs.register::<CanMelee>();
+    state.ecs.register::<ParticleLifetime>();
 
-    let map = new_map_rooms_and_corridors(&mut state.ecs, MAP_WIDTH, MAP_HEIGHT);
+    let map = new_map_rooms_and_corridors(MAP_WIDTH, MAP_HEIGHT);
 
     spawner::spawn_global_turn(&mut state.ecs);
     spawner::spawn_map(&mut state.ecs, &map);

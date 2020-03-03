@@ -1,9 +1,15 @@
+use std::sync::Mutex;
+
 use rltk::RandomNumberGenerator;
 
 use crate::console_log;
 
 pub struct Random {
-    rng: RandomNumberGenerator,
+    rng: Mutex<RandomNumberGenerator>,
+}
+
+lazy_static! {
+    pub static ref RNG: Random = Random::new();
 }
 
 const DEBUG_SEED: Option<u64> = Some(6836765706277375599);
@@ -11,15 +17,15 @@ const DEBUG_SEED: Option<u64> = Some(6836765706277375599);
 impl Random {
     pub fn new() -> Random {
         Random {
-            rng: Random::get_rng()
+            rng: Mutex::new(Random::get_rng()),
         }
     }
 
-    pub fn range(&mut self, min: i32, max: i32) -> i32 {
-        self.rng.range(min, max)
+    pub fn range(&self, min: i32, max: i32) -> i32 {
+        self.rng.lock().unwrap().range(min, max)
     }
 
-    pub fn inclusive_range(&mut self, min: i32, max: i32) -> i32 {
+    pub fn inclusive_range(&self, min: i32, max: i32) -> i32 {
         self.range(min, max + 1)
     }
 
@@ -34,17 +40,21 @@ impl Random {
         }
     }
 
+    pub fn reseed(&self, seed: u64) {
+        *self.rng.lock().unwrap() = RandomNumberGenerator::seeded(seed);
+    }
+
     fn get_random_seed() -> u64 {
         let mut rng = RandomNumberGenerator::new();
 
         rng.next_u64()
     }
 
-    pub fn flip_coin(&mut self) -> bool {
+    pub fn flip_coin(&self) -> bool {
         self.range(0, 2) == 1
     }
 
-    pub fn roll_die(&mut self, die_type: i32) -> i32 {
-        self.rng.roll_dice(1, die_type)
+    pub fn roll_die(&self, die_type: i32) -> i32 {
+        self.rng.lock().unwrap().roll_dice(1, die_type)
     }
 }
