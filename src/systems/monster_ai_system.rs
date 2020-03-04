@@ -4,11 +4,22 @@ extern crate specs;
 use rltk::Point;
 use specs::prelude::*;
 
-use crate::{Confusion, Map, Monster, Position, RNG, Viewshed, WantsToMelee, WantsToMove, WantsToTakeTurn, WantsToWait};
+use crate::{Confusion, console_log, Map, Monster, Name, Position, RNG, Viewshed, WantsToMelee, WantsToMove, WantsToTakeTurn, WantsToWait};
 
 use self::rltk::Algorithm2D;
 
 pub struct MonsterAI;
+
+impl MonsterAI {
+    pub const NAME: &'static str = "mob";
+}
+
+#[derive(Debug)]
+enum MonsterTurnAction {
+    Melee(Entity),
+    Move(Point),
+    Wait,
+}
 
 impl<'a> System<'a> for MonsterAI {
     type SystemData = (
@@ -24,6 +35,7 @@ impl<'a> System<'a> for MonsterAI {
         ReadStorage<'a, Viewshed>,
         WriteStorage<'a, WantsToWait>,
         ReadStorage<'a, Confusion>,
+        ReadStorage<'a, Name>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -40,16 +52,16 @@ impl<'a> System<'a> for MonsterAI {
             viewsheds,
             mut wants_to_wait,
             confusions,
+            names,
         ) = data;
 
         let map = &mut *map;
         let player_pos = *player_pos;
         let player_idx = map.point2d_to_index(player_pos);
 
-        for (entity, _monster, position, _turn, viewshed) in (&entities, &monster, &positions, &wants_to_take_turn, &viewsheds).join() {
+        let get_action = |entity: Entity, position: &Position, viewshed: &Viewshed| -> MonsterTurnAction {
             if confusions.get(entity).is_some() {
-                wants_to_wait.insert(entity, WantsToWait).expect("Unable to insert intent");
-                continue;
+                return MonsterTurnAction::Wait;
             }
 
             let distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(position.x, position.y), player_pos);
@@ -57,7 +69,7 @@ impl<'a> System<'a> for MonsterAI {
             const IS_ADJACENT_DISTANCE: f32 = 1.01;
 
             if distance < IS_ADJACENT_DISTANCE {
-                wants_to_melee.insert(entity, WantsToMelee { target: *player_entity }).expect("Unable to insert intent");
+                return MonsterTurnAction::Melee(*player_entity);
             } else if viewshed.visible_tiles.contains(&player_pos) {
                 let monster_idx = map.xy_idx(position.x, position.y);
                 let path = rltk::a_star_search(monster_idx, player_idx, map);
@@ -67,9 +79,9 @@ impl<'a> System<'a> for MonsterAI {
                 if path.success && path.steps.len() > FIRST_STEP_INDEX {
                     let first_step_idx = path.steps[FIRST_STEP_INDEX];
                     let first_step = map.index_to_point2d(first_step_idx);
-                    wants_to_move.insert(entity, WantsToMove { destination: first_step }).expect("Unable to insert intent");
+                    return MonsterTurnAction::Move(first_step);
                 } else {
-                    wants_to_wait.insert(entity, WantsToWait).expect("Unable to insert intent");
+                    return MonsterTurnAction::Wait;
                 }
             } else {
                 let delta: (i32, i32);
@@ -82,11 +94,31 @@ impl<'a> System<'a> for MonsterAI {
                     _ => delta = (0, 0),
                 }
 
-                let next_step = Point::new(position.x + delta.0, position.y + delta.1);
+                let (delta_x, delta_y) = delta;
+
+                let next_step = Point::new(position.x + delta_x, position.y + delta_y);
 
                 if RNG.roll_die(7) > 1 {
-                    wants_to_move.insert(entity, WantsToMove { destination: next_step }).expect("Unable to insert intent");
+                    return MonsterTurnAction::Move(next_step);
                 } else {
+                    return MonsterTurnAction::Wait;
+                }
+            }
+        };
+
+        for (entity, _monster, position, _turn, viewshed, name) in (&entities, &monster, &positions, &wants_to_take_turn, &viewsheds, &names).join() {
+            let action = get_action(entity, position, viewshed);
+
+            console_log(format!("           {}: {:?}", name.name, action));
+
+            match action {
+                MonsterTurnAction::Melee(target) => {
+                    wants_to_melee.insert(entity, WantsToMelee { target }).expect("Unable to insert intent");
+                }
+                MonsterTurnAction::Move(destination) => {
+                    wants_to_move.insert(entity, WantsToMove { destination }).expect("Unable to insert intent");
+                }
+                MonsterTurnAction::Wait => {
                     wants_to_wait.insert(entity, WantsToWait).expect("Unable to insert intent");
                 }
             }

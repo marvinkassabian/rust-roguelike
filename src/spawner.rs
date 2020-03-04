@@ -39,11 +39,7 @@ pub fn player(ecs: &mut World, x: i32, y: i32) -> Entity {
 
 
 pub fn random_monster(ecs: &mut World, x: i32, y: i32) {
-    let coin_flip: bool;
-    {
-        coin_flip = RNG.flip_coin();
-    }
-    if coin_flip {
+    if RNG.flip_coin() {
         orc(ecs, x, y)
     } else {
         goblin(ecs, x, y)
@@ -99,11 +95,7 @@ fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: u8, name: S) {
 }
 
 pub fn random_item(ecs: &mut World, x: i32, y: i32) {
-    let roll: i32;
-    {
-        roll = RNG.roll_die(4);
-    }
-    match roll {
+    match RNG.roll_die(4) {
         1 => { health_potion(ecs, x, y) }
         2 => { fireball_scroll(ecs, x, y) }
         3 => { confusion_scroll(ecs, x, y) }
@@ -238,15 +230,11 @@ pub fn spawn_map(ecs: &mut World, map: &Map) {
 }
 
 fn spawn_room(ecs: &mut World, map: &Map, room: &Rect) {
-    let monster_spawn_points: Vec<usize>;
-    let item_spawn_points: Vec<usize>;
-    {
-        let monster_count = RNG.inclusive_range(0, MAX_MONSTERS + DROP_OFFSET) - DROP_OFFSET;
-        let item_count = RNG.inclusive_range(0, MAX_ITEMS + DROP_OFFSET) - DROP_OFFSET;
+    let monster_count = RNG.inclusive_range(0, MAX_MONSTERS + DROP_OFFSET) - DROP_OFFSET;
+    let item_count = RNG.inclusive_range(0, MAX_ITEMS + DROP_OFFSET) - DROP_OFFSET;
 
-        monster_spawn_points = get_spawn_points(map, monster_count, room);
-        item_spawn_points = get_spawn_points(map, item_count, room);
-    }
+    let monster_spawn_points = get_spawn_points(map, monster_count, room);
+    let item_spawn_points = get_spawn_points(map, item_count, room);
 
     for idx in monster_spawn_points {
         let pt = map.index_to_point2d(idx);

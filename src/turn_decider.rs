@@ -105,7 +105,7 @@ impl<'a> TurnDecider<'a> {
             let takes_turn = takes_turn.get(*entity).unwrap();
             let name = names.get(*entity).unwrap();
             let is_visible = is_visible.get(*entity).is_some();
-            console_log(format!("Is ({}) {}'s turn (is_visible: {})", takes_turn.time_score, name.name, is_visible));
+            console_log(format!("({}) {}'s turn (is_visible: {})", takes_turn.time_score, name.name, is_visible));
         } else {
             console_log("Is a non turn");
         }

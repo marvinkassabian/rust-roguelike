@@ -2,7 +2,7 @@ use rltk::{GameState, render_draw_buffer, Rltk};
 use specs::prelude::*;
 use specs::WorldExt;
 
-use crate::{AreaOfEffect, Context, cull_dead_particles, DamageSystem, decide_turn, delete_the_dead, GlobalTurnSystem, gui, ItemCollectionSystem, ItemDropSystem, ItemMenuResult, ItemUseSystem, MapIndexingSystem, MeleeCombatSystem, MonsterAI, MovementSystem, ParticleSpawnSystem, player_input, Ranged, RangedTargetDrawerSettings, RangedTargetResult, render_camera, VisibilitySystem, WaitSystem, WantsToDrop, WantsToUseItem};
+use crate::{AreaOfEffect, console_log, Context, cull_dead_particles, DamageSystem, decide_turn, delete_the_dead, GlobalTurnSystem, gui, ItemCollectionSystem, ItemDropSystem, ItemMenuResult, ItemUseSystem, MapIndexingSystem, MeleeCombatSystem, MonsterAI, MovementSystem, ParticleSpawnSystem, player_input, Ranged, RangedTargetDrawerSettings, RangedTargetResult, render_camera, VisibilitySystem, WaitSystem, WantsToDrop, WantsToUseItem};
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum RunState {
@@ -47,6 +47,12 @@ impl State {
 
     fn set_run_state(&mut self, new_run_state: RunState) {
         let mut run_state_holder = self.ecs.write_resource::<RunStateHolder>();
+        let old_run_state = run_state_holder.run_state;
+
+        if old_run_state != new_run_state {
+            console_log(format!("Turn state: {:?} -> {:?}", old_run_state, new_run_state));
+        }
+
         run_state_holder.run_state = new_run_state;
     }
 }
@@ -171,21 +177,19 @@ pub struct SysRunner {
 impl SysRunner {
     pub fn new() -> Self {
         let dispatcher = DispatcherBuilder::new()
-            .with(MapIndexingSystem, "map_index_2", &[])
-            .with(MovementSystem, MovementSystem::NAME, &["map_index_2"])
-            .with(MapIndexingSystem, MapIndexingSystem::NAME, &[MovementSystem::NAME])
+            .with(MapIndexingSystem, MapIndexingSystem::NAME, &[])
             .with(VisibilitySystem, "vis", &[MapIndexingSystem::NAME])
-            .with(MonsterAI, "mob", &[MapIndexingSystem::NAME])
             .with(GlobalTurnSystem, "global", &[MapIndexingSystem::NAME])
-            .with(MeleeCombatSystem, "melee_combat", &[MapIndexingSystem::NAME])
-            .with(WaitSystem, "wait", &[MapIndexingSystem::NAME])
-            .with(ItemCollectionSystem, "pick_up", &[MapIndexingSystem::NAME])
-            .with(ItemUseSystem, "use_item", &[MapIndexingSystem::NAME])
-            .with(ItemDropSystem, "drop", &[MapIndexingSystem::NAME])
+            .with(MonsterAI, MonsterAI::NAME, &[MapIndexingSystem::NAME])
+            .with(MovementSystem, MovementSystem::NAME, &[MonsterAI::NAME])
+            .with(MeleeCombatSystem, "melee_combat", &[MonsterAI::NAME])
+            .with(WaitSystem, "wait", &[MonsterAI::NAME])
+            .with(ItemCollectionSystem, "pick_up", &[MonsterAI::NAME])
+            .with(ItemUseSystem, "use_item", &[MonsterAI::NAME])
+            .with(ItemDropSystem, "drop", &[MonsterAI::NAME])
             .with(DamageSystem, "damage", &["melee_combat", "use_item"])
-            .with(ParticleSpawnSystem, "particle", &[MapIndexingSystem::NAME])
+            .with(ParticleSpawnSystem, "particle", &["damage"])
             .build();
-
 
         SysRunner { dispatcher }
     }

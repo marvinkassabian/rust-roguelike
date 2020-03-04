@@ -2,7 +2,7 @@ use rltk::{ColorPair, Console, DrawBatch, Point, Rect, RGB, Rltk};
 
 use crate::CONSOLE_INDEX;
 
-const USE_BUFFER: bool = false;
+const USE_BUFFER: bool = true;
 
 pub struct Context<'a> {
     pub rltk: &'a mut Rltk
