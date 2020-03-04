@@ -1,11 +1,12 @@
 use rltk::{Algorithm2D, ColorPair, Console, Point, RGB};
 use specs::prelude::*;
 
-use crate::{Context, DEBUG, GAME_LOG_HEIGHT, Map, Position, Renderable, TileType};
+use crate::{CONSOLE_INDEX, Context, DEBUG, GAME_LOG_HEIGHT, Map, Position, Renderable, RenderAura, RenderBackground, TileType};
 
 const SHOW_BOUNDARIES: bool = DEBUG;
 const WALL_HEIGHT: usize = 4;
 const ENTITY_HEIGHT: usize = 2;
+const AURA_HEIGHT: usize = ENTITY_HEIGHT + 1;
 
 pub struct CameraRenderer<'a, 'b> {
     pub ecs: &'a World,
@@ -32,6 +33,7 @@ impl<'a, 'b> CameraRenderer<'a, 'b> {
 
         self.draw_map(min_x, min_y, max_x, max_y);
         self.draw_entities(min_x, min_y);
+        self.draw_particles(min_x, min_y);
     }
 
     fn draw_map(&mut self, min_x: i32, min_y: i32, max_x: i32, max_y: i32) {
@@ -79,16 +81,66 @@ impl<'a, 'b> CameraRenderer<'a, 'b> {
             b_render.render_order.cmp(&a_render.render_order)
         });
 
-        for (pos, render) in data.iter() {
-            let idx = map.xy_idx(pos.x, pos.y);
-            if map.visible_tiles[idx] {
-                let entity_screen_x = pos.x - min_x;
-                let entity_screen_y = pos.y - min_y;
+        for (position, renderable) in data.iter() {
+            if map.is_visible(position.x, position.y) {
+                let entity_screen_x = position.x - min_x;
+                let entity_screen_y = position.y - min_y;
+                //TODO check to see if this can be replaced with a map method call
                 if entity_screen_x > 0 && entity_screen_x < map_width && entity_screen_y > 0 && entity_screen_y < map_height {
-                    self.context.layered_set(Point::new(entity_screen_x, entity_screen_y), ColorPair::new(render.fg, render.bg), render.glyph, ENTITY_HEIGHT, true);
+                    self.context.layered_set(
+                        Point::new(entity_screen_x, entity_screen_y),
+                        ColorPair::new(renderable.fg, renderable.bg),
+                        renderable.glyph,
+                        ENTITY_HEIGHT,
+                        true,
+                    );
                 }
             }
         }
+    }
+
+    fn draw_particles(&mut self, min_x: i32, min_y: i32) {
+        let positions = self.ecs.read_storage::<Position>();
+        let render_backgrounds = self.ecs.read_storage::<RenderBackground>();
+        let render_auras = self.ecs.read_storage::<RenderAura>();
+        let map = self.ecs.fetch::<Map>();
+
+        let (map_width, map_height) = (map.width - 1, map.height - 1);
+
+        //TODO merge two for-loops into one
+        for (position, render_background) in (&positions, &render_backgrounds).join() {
+            if map.is_visible(position.x, position.y) {
+                let entity_screen_x = position.x - min_x;
+                let entity_screen_y = position.y - min_y;
+                //TODO check to see if this can be replaced with a map method call
+                if entity_screen_x > 0 && entity_screen_x < map_width && entity_screen_y > 0 && entity_screen_y < map_height {
+                    self.context.set_bg(
+                        Point::new(entity_screen_x, entity_screen_y),
+                        render_background.bg,
+                    );
+                }
+            }
+        }
+
+        self.context.set_target(AURA_HEIGHT);
+
+        //TODO merge two for-loops into one
+        for (position, render_aura) in (&positions, &render_auras).join() {
+            if map.is_visible(position.x, position.y) {
+                let entity_screen_x = position.x - min_x;
+                let entity_screen_y = position.y - min_y;
+                //TODO check to see if this can be replaced with a map method call
+                if entity_screen_x > 0 && entity_screen_x < map_width && entity_screen_y > 0 && entity_screen_y < map_height {
+                    self.context.set(
+                        Point::new(entity_screen_x, entity_screen_y),
+                        ColorPair::new(render_aura.fg, RGB::named(rltk::BLACK)),
+                        render_aura.glyph,
+                    );
+                }
+            }
+        }
+
+        self.context.set_target(CONSOLE_INDEX.base);
     }
 
     pub fn get_screen_bounds(&mut self) -> (i32, i32, i32, i32) {

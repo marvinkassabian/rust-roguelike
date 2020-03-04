@@ -79,6 +79,8 @@ fn main() {
     state.ecs.register::<CanMove>();
     state.ecs.register::<CanMelee>();
     state.ecs.register::<ParticleLifetime>();
+    state.ecs.register::<RenderBackground>();
+    state.ecs.register::<RenderAura>();
 
     let map = new_map_rooms_and_corridors(MAP_WIDTH, MAP_HEIGHT);
 

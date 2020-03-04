@@ -1,6 +1,6 @@
 extern crate specs;
 
-use rltk::{ColorPair, Point, RGB};
+use rltk::{Point, RGB};
 use specs::prelude::*;
 
 use crate::{BlocksTile, CanMove, Map, ParticleBuilder, Player, Position, TakesTurn, Viewshed, WantsToMove};
@@ -61,11 +61,10 @@ impl<'a> System<'a> for MovementSystem {
                 viewshed.dirty = true;
             }
 
-            particle_builder.request(
+            particle_builder.request_background(
                 old_position,
-                ColorPair::new(RGB::named(rltk::BLACK), RGB::named(rltk::WHITE_SMOKE)),
-                rltk::to_cp437(' '),
                 300.,
+                RGB::named(rltk::GREY50),
             );
 
             let is_blocker = blocks_tiles.get(entity).is_some();

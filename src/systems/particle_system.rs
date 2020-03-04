@@ -1,7 +1,7 @@
-use rltk::{ColorPair, Point};
+use rltk::{ColorPair, Point, RGB};
 use specs::prelude::*;
 
-use crate::{Context, ParticleLifetime, Position, Renderable};
+use crate::{Context, ParticleLifetime, Position, Renderable, RenderAura, RenderBackground};
 
 pub fn cull_dead_particles(ecs: &mut World, context: &mut Context) {
     let mut dead_particles: Vec<Entity> = Vec::new();
@@ -20,10 +20,24 @@ pub fn cull_dead_particles(ecs: &mut World, context: &mut Context) {
     }
 }
 
-struct ParticleRequest {
+//TODO figure out better naming convention
+enum ParticleRequestType {
+    Entity {
+        color: ColorPair,
+        glyph: u8,
+    },
+    Background {
+        bg: RGB,
+    },
+    Aura {
+        fg: RGB,
+        glyph: u8,
+    },
+}
+
+pub struct ParticleRequest {
     position: Point,
-    color: ColorPair,
-    glyph: u8,
+    request_type: ParticleRequestType,
     lifetime: f32,
 }
 
@@ -36,15 +50,34 @@ impl ParticleBuilder {
         ParticleBuilder { requests: Vec::new() }
     }
 
-    pub fn request(&mut self, position: Point, color: ColorPair, glyph: u8, lifetime: f32) {
-        self.requests.push(
-            ParticleRequest {
-                position,
+    pub fn request_entity(&mut self, position: Point, lifetime: f32, color: ColorPair, glyph: u8) {
+        self.requests.push(ParticleRequest {
+            position,
+            request_type: ParticleRequestType::Entity {
                 color,
                 glyph,
-                lifetime,
-            }
-        );
+            },
+            lifetime,
+        });
+    }
+
+    pub fn request_background(&mut self, position: Point, lifetime: f32, bg: RGB) {
+        self.requests.push(ParticleRequest {
+            position,
+            request_type: ParticleRequestType::Background { bg },
+            lifetime,
+        });
+    }
+
+    pub fn request_aura(&mut self, position: Point, lifetime: f32, fg: RGB, glyph: u8) {
+        self.requests.push(ParticleRequest {
+            position,
+            request_type: ParticleRequestType::Aura {
+                fg,
+                glyph,
+            },
+            lifetime,
+        });
     }
 }
 
@@ -55,6 +88,8 @@ impl<'a> System<'a> for ParticleSpawnSystem {
         Entities<'a>,
         WriteStorage<'a, Position>,
         WriteStorage<'a, Renderable>,
+        WriteStorage<'a, RenderBackground>,
+        WriteStorage<'a, RenderAura>,
         WriteStorage<'a, ParticleLifetime>,
         WriteExpect<'a, ParticleBuilder>
     );
@@ -64,6 +99,8 @@ impl<'a> System<'a> for ParticleSpawnSystem {
             entities,
             mut positions,
             mut renderables,
+            mut render_backgrounds,
+            mut render_auras,
             mut particles,
             mut particle_builder
         ) = data;
@@ -77,19 +114,36 @@ impl<'a> System<'a> for ParticleSpawnSystem {
                     y: new_particle.position.y,
                 },
             ).expect("Unable to insert position");
-            renderables.insert(
-                particle_entity,
-                Renderable {
-                    fg: new_particle.color.fg,
-                    bg: new_particle.color.bg,
-                    glyph: new_particle.glyph,
-                    render_order: 0,
-                },
-            ).expect("Unable to insert renderable");
             particles.insert(
                 particle_entity,
                 ParticleLifetime { lifetime_ms: new_particle.lifetime },
             ).expect("Unable to insert lifetime");
+
+            match new_particle.request_type {
+                ParticleRequestType::Entity { color, glyph } => {
+                    renderables.insert(
+                        particle_entity,
+                        Renderable {
+                            fg: color.fg,
+                            bg: color.bg,
+                            glyph,
+                            render_order: 0,
+                        },
+                    ).expect("Unable to insert renderable");
+                }
+                ParticleRequestType::Background { bg } => {
+                    render_backgrounds.insert(
+                        particle_entity,
+                        RenderBackground { bg },
+                    ).expect("Unable to insert render background");
+                }
+                ParticleRequestType::Aura { fg, glyph } => {
+                    render_auras.insert(
+                        particle_entity,
+                        RenderAura { fg, glyph },
+                    ).expect("Unable to insert render background");
+                }
+            }
         }
 
         particle_builder.requests.clear();

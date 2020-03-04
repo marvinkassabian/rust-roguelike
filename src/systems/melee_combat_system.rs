@@ -1,14 +1,14 @@
 extern crate specs;
 
+use rltk::Point;
 use specs::prelude::*;
 
-use crate::{CanMelee, CombatStats, GameLog, Name, SuffersDamage, TakesTurn, WantsToMelee};
+use crate::{CanMelee, CombatStats, GameLog, Name, ParticleBuilder, Position, SuffersDamage, TakesTurn, WantsToMelee};
 
 pub struct MeleeCombatSystem;
 
 impl<'a> System<'a> for MeleeCombatSystem {
     type SystemData = (
-        Entities<'a>,
         WriteExpect<'a, GameLog>,
         WriteStorage<'a, WantsToMelee>,
         ReadStorage<'a, Name>,
@@ -16,11 +16,12 @@ impl<'a> System<'a> for MeleeCombatSystem {
         WriteStorage<'a, SuffersDamage>,
         WriteStorage<'a, TakesTurn>,
         ReadStorage<'a, CanMelee>,
+        ReadStorage<'a, Position>,
+        WriteExpect<'a, ParticleBuilder>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
         let (
-            entities,
             mut game_log,
             mut wants_melee,
             names,
@@ -28,9 +29,11 @@ impl<'a> System<'a> for MeleeCombatSystem {
             mut suffers_damage,
             mut takes_turn,
             can_melee,
+            positions,
+            mut particle_builder,
         ) = data;
 
-        for (_entity, wants_melee, name, stats, mut takes_turn, can_melee) in (&entities, &wants_melee, &names, &combat_stats, &mut takes_turn, &can_melee).join() {
+        for (wants_melee, name, stats, mut takes_turn, can_melee) in (&wants_melee, &names, &combat_stats, &mut takes_turn, &can_melee).join() {
             takes_turn.time_score += can_melee.time_cost;
 
             if stats.hp <= 0 {
@@ -58,6 +61,16 @@ impl<'a> System<'a> for MeleeCombatSystem {
                     &name.name,
                     &target_name.name,
                     damage));
+
+                if let Some(target_position) = positions.get(wants_melee.target) {
+                    particle_builder.request_aura(
+                        Point::new(target_position.x, target_position.y),
+                        300.,
+                        rltk::RGB::named(rltk::ORANGE),
+                        rltk::to_cp437('‼'),
+                    );
+                }
+
                 suffers_damage
                     .insert(wants_melee.target, SuffersDamage { amount: damage })
                     .expect("Unable to do damage");

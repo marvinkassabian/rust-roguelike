@@ -14,12 +14,24 @@ pub struct Position {
     pub y: i32,
 }
 
+//TODO figure out way to consolidate render components
 #[derive(Component, Debug)]
 pub struct Renderable {
     pub glyph: u8,
     pub fg: RGB,
     pub bg: RGB,
     pub render_order: i32,
+}
+
+#[derive(Component, Debug)]
+pub struct RenderBackground {
+    pub bg: RGB,
+}
+
+#[derive(Component, Debug)]
+pub struct RenderAura {
+    pub fg: RGB,
+    pub glyph: u8,
 }
 
 #[derive(Component, Debug)]
