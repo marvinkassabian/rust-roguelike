@@ -157,6 +157,7 @@ pub fn load_game(ecs: &mut World) {
         );
     }
 
+    //TODO fix turn taking system being stuck in a loop after load
     let mut delete_me: Option<Entity> = None;
     {
         let entities = ecs.entities();
