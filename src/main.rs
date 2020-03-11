@@ -1,5 +1,6 @@
 #[macro_use(lazy_static)]
 extern crate lazy_static;
+extern crate serde;
 #[macro_use]
 extern crate specs_derive;
 
@@ -7,6 +8,7 @@ use std::fmt::Display;
 
 use rltk::console;
 use specs::prelude::*;
+use specs::saveload::{SimpleMarker, SimpleMarkerAllocator};
 use specs::WorldExt;
 
 pub use components::*;
@@ -16,6 +18,7 @@ pub use gui::*;
 pub use map::*;
 pub use player::*;
 pub use random::*;
+pub use save_load_system::*;
 pub use spawner::*;
 pub use state::*;
 pub use systems::*;
@@ -33,15 +36,16 @@ mod gui;
 mod game_log;
 mod context;
 mod turn_decider;
+mod save_load_system;
 
 pub const DEBUG: bool = true;
+pub const TITLE: &str = "Goblin War Party";
 
 fn main() {
     const MAP_WIDTH: i32 = 80;
     const MAP_HEIGHT: i32 = 43;
     const WINDOW_WIDTH: i32 = 80;
     const WINDOW_HEIGHT: i32 = 50;
-    const TITLE: &str = "Goblin War Party";
 
 
     let mut state = State { ecs: World::new(), systems: SysRunner::new() };
@@ -81,7 +85,10 @@ fn main() {
     state.ecs.register::<ParticleLifetime>();
     state.ecs.register::<RenderBackground>();
     state.ecs.register::<RenderAura>();
+    state.ecs.register::<SimpleMarker<SerializeMe>>();
+    state.ecs.register::<SerializationHelper>();
 
+    state.ecs.insert(SimpleMarkerAllocator::<SerializeMe>::new());
     let map = new_map_rooms_and_corridors(MAP_WIDTH, MAP_HEIGHT);
 
     spawner::spawn_global_turn(&mut state.ecs);

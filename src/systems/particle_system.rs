@@ -3,6 +3,10 @@ use specs::prelude::*;
 
 use crate::{Context, ParticleLifetime, Position, Renderable, RenderAura, RenderBackground};
 
+pub const SHORT_LIFETIME: f32 = 300.;
+pub const MEDIUM_LIFETIME: f32 = 500.;
+pub const LONG_LIFETIME: f32 = 700.;
+
 pub fn cull_dead_particles(ecs: &mut World, context: &mut Context) {
     let mut dead_particles: Vec<Entity> = Vec::new();
     {

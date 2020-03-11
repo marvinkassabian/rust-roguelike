@@ -2,7 +2,7 @@ use rltk::{GameState, render_draw_buffer, Rltk};
 use specs::prelude::*;
 use specs::WorldExt;
 
-use crate::{AreaOfEffect, console_log, Context, cull_dead_particles, DamageSystem, decide_turn, delete_the_dead, GlobalTurnSystem, gui, ItemCollectionSystem, ItemDropSystem, ItemMenuResult, ItemUseSystem, MapIndexingSystem, MeleeCombatSystem, MonsterAI, MovementSystem, ParticleSpawnSystem, player_input, Ranged, RangedTargetDrawerSettings, RangedTargetResult, render_camera, VisibilitySystem, WaitSystem, WantsToDrop, WantsToUseItem};
+use crate::{console_log, Context, cull_dead_particles, DamageSystem, decide_turn, delete_the_dead, GlobalTurnSystem, gui, ItemCollectionSystem, ItemDropSystem, ItemMenuResult, ItemUseSystem, load_game, MainMenuSelection, MapIndexingSystem, MeleeCombatSystem, MonsterAI, MovementSystem, ParticleSpawnSystem, player_input, Ranged, RangedTargetDrawerSettings, RangedTargetResult, render_camera, save_game, VisibilitySystem, WaitSystem, WantsToDrop, WantsToUseItem};
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum RunState {
@@ -14,6 +14,8 @@ pub enum RunState {
     ShowInventory,
     ShowDropItem,
     ShowTargeting { range: i32, item: Entity, radius: Option<i32> },
+    MainMenu { menu_selection: MainMenuSelection },
+    SaveGame,
 }
 
 impl RunState {
@@ -40,12 +42,12 @@ pub struct GlobalTurnTimeScore {
 }
 
 impl State {
-    fn get_run_state(&mut self) -> RunState {
+    pub fn get_run_state(&mut self) -> RunState {
         let run_state_holder = self.ecs.fetch::<RunStateHolder>();
         run_state_holder.run_state
     }
 
-    fn set_run_state(&mut self, new_run_state: RunState) {
+    pub fn set_run_state(&mut self, new_run_state: RunState) {
         let mut run_state_holder = self.ecs.write_resource::<RunStateHolder>();
         let old_run_state = run_state_holder.run_state;
 
@@ -60,14 +62,19 @@ impl State {
 impl GameState for State {
     fn tick(&mut self, rltk: &mut Rltk) {
         let context = &mut Context::new(rltk);
+
         context.cls_all();
         cull_dead_particles(&mut self.ecs, context);
 
-
-        render_camera(&self.ecs, context);
-        gui::draw_ui(&self.ecs, context);
-
         let mut new_run_state = self.get_run_state();
+
+        match new_run_state {
+            RunState::MainMenu { .. } => {}
+            _ => {
+                render_camera(&self.ecs, context);
+                gui::draw_ui(&self.ecs, context);
+            }
+        }
 
         match new_run_state {
             RunState::PreRun => {
@@ -98,15 +105,10 @@ impl GameState for State {
                         let player_entity = self.ecs.read_resource::<Entity>();
                         match self.ecs.read_storage::<Ranged>().get(selected_item) {
                             Some(ranged) => {
-                                let mut radius: Option<i32> = None;
-                                if let Some(area_of_effect) = self.ecs.read_storage::<AreaOfEffect>().get(selected_item) {
-                                    radius = Some(area_of_effect.radius);
-                                }
-
                                 new_run_state = RunState::ShowTargeting {
                                     item: selected_item,
                                     range: ranged.range,
-                                    radius,
+                                    radius: None,
                                 }
                             }
                             None => {
@@ -159,6 +161,26 @@ impl GameState for State {
                         new_run_state = RunState::PlayerTurn;
                     }
                 }
+            }
+            RunState::MainMenu { .. } => {
+                let result = gui::main_menu(self, context);
+                match result {
+                    gui::MainMenuResult::NoSelection { selected } => new_run_state = RunState::MainMenu { menu_selection: selected },
+                    gui::MainMenuResult::Selected { selected } => {
+                        match selected {
+                            gui::MainMenuSelection::NewGame => new_run_state = RunState::PreRun,
+                            gui::MainMenuSelection::LoadGame => {
+                                load_game(&mut self.ecs);
+                                new_run_state = RunState::PreRun
+                            }
+                            gui::MainMenuSelection::Quit => { ::std::process::exit(0); }
+                        }
+                    }
+                }
+            }
+            RunState::SaveGame => {
+                save_game(&mut self.ecs);
+                new_run_state = RunState::MainMenu { menu_selection: gui::MainMenuSelection::LoadGame };
             }
         }
 

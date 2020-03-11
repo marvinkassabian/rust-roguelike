@@ -2,10 +2,10 @@ extern crate specs;
 
 use std::cmp::min;
 
-use rltk::Algorithm2D;
+use rltk::{Algorithm2D, ColorPair, Point, RGB};
 use specs::prelude::*;
 
-use crate::{AreaOfEffect, CombatStats, Confusion, Consumable, GameLog, InflictsDamage, Map, Name, ProvidesHealing, SuffersDamage, WantsToUseItem};
+use crate::{AreaOfEffect, CombatStats, Confusion, Consumable, GameLog, InflictsDamage, LONG_LIFETIME, Map, MEDIUM_LIFETIME, Name, ParticleBuilder, Position, ProvidesHealing, SuffersDamage, WantsToUseItem};
 
 pub struct ItemUseSystem;
 
@@ -24,6 +24,8 @@ impl<'a> System<'a> for ItemUseSystem {
         WriteStorage<'a, SuffersDamage>,
         ReadStorage<'a, AreaOfEffect>,
         WriteStorage<'a, Confusion>,
+        WriteExpect<'a, ParticleBuilder>,
+        ReadStorage<'a, Position>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -41,6 +43,8 @@ impl<'a> System<'a> for ItemUseSystem {
             mut suffers_damage,
             aoe,
             mut confusion,
+            mut particle_builder,
+            positions,
         ) = data;
 
         for (user_entity, use_item) in (&entities, &wants_to_use_items).join() {
@@ -67,11 +71,23 @@ impl<'a> System<'a> for ItemUseSystem {
 
                             let valid_blast_tiles = blast_tiles
                                 .iter()
-                                .filter(|p| map.in_bounds(**p));
+                                .filter(|p| map.in_bounds(**p))
+                                .map(|e| *e)
+                                .collect::<Vec<Point>>();
+
+                            for valid_blast_tile in valid_blast_tiles.iter() {
+                                particle_builder.request_entity(
+                                    *valid_blast_tile,
+                                    LONG_LIFETIME,
+                                    ColorPair::new(RGB::named(rltk::ORANGE), RGB::named(rltk::RED)),
+                                    rltk::to_cp437('░'),
+                                );
+                            }
 
                             let mut hit_entities = valid_blast_tiles
+                                .iter()
                                 .flat_map(|tile| -> &Vec<Entity> {
-                                    let target_idx = map.point2d_to_index(*tile) as usize;
+                                    let target_idx = map.point2d_to_index(*tile);
                                     return &map.tile_content[target_idx];
                                 })
                                 .map(|e| *e)
@@ -96,6 +112,15 @@ impl<'a> System<'a> for ItemUseSystem {
                         if user_entity == *player_entity {
                             let item_name = &names.get(item_entity).unwrap().name;
                             game_log.add(format!("You use {}, healing {} hp.", item_name, heal_item.heal_amount));
+                        }
+
+                        if let Some(position) = positions.get(**target) {
+                            particle_builder.request_aura(
+                                Point::new(position.x, position.y),
+                                MEDIUM_LIFETIME,
+                                rltk::RGB::named(rltk::HOT_PINK),
+                                rltk::to_cp437('♥'),
+                            );
                         }
                     }
                 }
@@ -127,6 +152,8 @@ impl<'a> System<'a> for ItemUseSystem {
             let confusion_item = confusion.get(item_entity);
             if let Some(confusion_item) = confusion_item {
                 for target in stat_targets.iter() {
+                    used_item = true;
+
                     mobs_to_confuse.push((target, confusion_item.turns));
                     if user_entity == *player_entity {
                         let item_name = &names.get(item_entity).unwrap().name;
@@ -138,6 +165,15 @@ impl<'a> System<'a> for ItemUseSystem {
 
             for (mob, turns) in mobs_to_confuse.iter() {
                 confusion.insert(***mob, Confusion { turns: *turns }).expect("Unable to insert status");
+
+                if let Some(position) = positions.get(***mob) {
+                    particle_builder.request_aura(
+                        Point::new(position.x, position.y),
+                        MEDIUM_LIFETIME,
+                        rltk::RGB::named(rltk::MAGENTA),
+                        rltk::to_cp437('?'),
+                    );
+                }
             }
 
             if used_item {

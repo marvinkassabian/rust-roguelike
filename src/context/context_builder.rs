@@ -1,6 +1,7 @@
 use std::string::ToString;
 
 use rltk::{Console, Rltk, RltkBuilder, SimpleConsole, SparseConsole};
+use rltk::font::Font;
 
 use crate::{CONSOLE_INDEX, console_log, LAYER_COUNT};
 
@@ -11,10 +12,8 @@ const LAYER_STATIC_OFFSET_Y: f32 = 0.;
 const SHADER_PATH: &str = "resources";
 const TILE_WIDTH: u32 = 8 * SCREEN_MULTIPLIER;
 const TILE_HEIGHT: u32 = 8 * SCREEN_MULTIPLIER;
-const USE_DEPTH: bool = false;
 
 const SCREEN_MULTIPLIER: u32 = 1;
-const SCALE_STEP: u32 = 2;
 
 pub struct ContextBuilder<'a> {
     pub width: u32,
@@ -39,23 +38,13 @@ impl<'a> ContextBuilder<'a> {
             .with_resource_path(SHADER_PATH)
             .build();
 
-        let mut tile_width = TILE_WIDTH;
-        let mut tile_height = TILE_HEIGHT;
-
         let base_console_index = self.add_console(
             &mut context,
             AddConsoleParameter {
                 has_bg: true,
-                tile_width: Some(tile_width),
-                tile_height: Some(tile_height),
                 ..Default::default()
             },
         );
-
-        if USE_DEPTH {
-            tile_width += SCALE_STEP;
-            tile_height += SCALE_STEP;
-        }
 
         check_console_index(CONSOLE_INDEX.base, base_console_index);
 
@@ -68,16 +57,9 @@ impl<'a> ContextBuilder<'a> {
                     offset_x: LAYER_STATIC_OFFSET_X + LAYER_OFFSET_X * offset_multiplier,
                     offset_y: LAYER_STATIC_OFFSET_Y + LAYER_OFFSET_Y * offset_multiplier,
 
-                    tile_width: Some(tile_width),
-                    tile_height: Some(tile_height),
                     is_sparse: true,
                     ..Default::default()
                 });
-
-            if USE_DEPTH {
-                tile_width += SCALE_STEP;
-                tile_height += SCALE_STEP;
-            }
 
             check_console_index(CONSOLE_INDEX.layers[layer], layer_console_index);
         }
@@ -87,9 +69,6 @@ impl<'a> ContextBuilder<'a> {
             AddConsoleParameter {
                 is_sparse: true,
                 has_bg: true,
-
-                tile_width: Some(tile_width),
-                tile_height: Some(tile_height),
                 ..Default::default()
             });
 
@@ -111,7 +90,7 @@ impl<'a> ContextBuilder<'a> {
         console_log(format!("tile_width: {}, tile_height: {}", tile_width, tile_height));
 
         let font_path = format!("{}/terminal8x8.png", &SHADER_PATH.to_string());
-        let font = context.register_font(rltk::Font::load(font_path, (tile_width, tile_height)));
+        let font = context.register_font(Font::load(font_path, (tile_width, tile_height)));
 
         let mut console: Box<dyn Console>;
 
@@ -124,17 +103,9 @@ impl<'a> ContextBuilder<'a> {
             console = SimpleConsole::init(width, height, &context.backend);
         }
 
-        let mut offset_x = params.offset_x;
-        let mut offset_y = params.offset_y;
+        console_log(format!("offset_x: {}, offset_y: {}", params.offset_x, params.offset_y));
 
-        if USE_DEPTH {
-            offset_x += ((width - self.width) / 2) as f32;
-            offset_y -= ((height - self.height) / 2) as f32;
-        }
-
-        console_log(format!("offset_x: {}, offset_y: {}", offset_x, offset_y));
-
-        console.set_offset(offset_x, offset_y);
+        console.set_offset(params.offset_x, params.offset_y);
         if params.has_bg {
             context.register_console(console, font)
         } else {

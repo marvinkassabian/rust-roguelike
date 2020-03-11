@@ -1,28 +1,48 @@
 extern crate specs;
 
+use rltk::Point;
 use specs::prelude::*;
 
-use crate::{CombatStats, GameLog, Name, Player, RunStateHolder, SuffersDamage};
+use crate::{CombatStats, GameLog, MEDIUM_LIFETIME, Name, ParticleBuilder, Player, Position, RunStateHolder, SuffersDamage};
 
 pub struct DamageSystem;
 
 impl<'a> System<'a> for DamageSystem {
     type SystemData = (
+        Entities<'a>,
         WriteStorage<'a, CombatStats>,
         WriteStorage<'a, SuffersDamage>,
+        WriteExpect<'a, ParticleBuilder>,
+        ReadStorage<'a, Position>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
         let (
-            mut stats,
-            mut damage
+            entities,
+            mut combat_stats,
+            mut suffers_damage,
+            mut particle_builder,
+            positions,
         ) = data;
 
-        for (mut stats, damage) in (&mut stats, &damage).join() {
-            stats.hp -= damage.amount;
+        for (entity, mut combat_stat, suffer_damage) in (&entities, &mut combat_stats, &suffers_damage).join() {
+            if suffer_damage.amount == 0 {
+                continue;
+            }
+
+            combat_stat.hp -= suffer_damage.amount;
+
+            if let Some(position) = positions.get(entity) {
+                particle_builder.request_aura(
+                    Point::new(position.x, position.y),
+                    MEDIUM_LIFETIME,
+                    rltk::RGB::named(rltk::ORANGE),
+                    rltk::to_cp437('‼'),
+                );
+            }
         }
 
-        damage.clear();
+        suffers_damage.clear();
     }
 }
 

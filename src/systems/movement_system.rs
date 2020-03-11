@@ -3,7 +3,7 @@ extern crate specs;
 use rltk::{Point, RGB};
 use specs::prelude::*;
 
-use crate::{BlocksTile, CanMove, Map, ParticleBuilder, Player, Position, TakesTurn, Viewshed, WantsToMove};
+use crate::{BlocksTile, CanMove, console_log, Map, ParticleBuilder, Player, Position, SHORT_LIFETIME, TakesTurn, Viewshed, WantsToMove};
 
 pub struct MovementSystem;
 
@@ -63,7 +63,7 @@ impl<'a> System<'a> for MovementSystem {
 
             particle_builder.request_background(
                 old_position,
-                300.,
+                SHORT_LIFETIME,
                 RGB::named(rltk::GREY50),
             );
 

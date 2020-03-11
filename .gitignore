@@ -19,3 +19,5 @@ Cargo.lock
 
 /.idea/
 /.vscode/
+
+save_game.json

@@ -4,7 +4,7 @@ extern crate specs;
 use rltk::Point;
 use specs::prelude::*;
 
-use crate::{Confusion, console_log, Map, Monster, Name, Position, RNG, Viewshed, WantsToMelee, WantsToMove, WantsToTakeTurn, WantsToWait};
+use crate::{Confusion, console_log, Map, Monster, Name, Position, RNG, Viewshed, WaitCause, WantsToMelee, WantsToMove, WantsToTakeTurn, WantsToWait};
 
 use self::rltk::Algorithm2D;
 
@@ -18,7 +18,7 @@ impl MonsterAI {
 enum MonsterTurnAction {
     Melee(Entity),
     Move(Point),
-    Wait,
+    Wait { is_confused: bool },
 }
 
 impl<'a> System<'a> for MonsterAI {
@@ -61,7 +61,7 @@ impl<'a> System<'a> for MonsterAI {
 
         let get_action = |entity: Entity, position: &Position, viewshed: &Viewshed| -> MonsterTurnAction {
             if confusions.get(entity).is_some() {
-                return MonsterTurnAction::Wait;
+                return MonsterTurnAction::Wait { is_confused: true };
             }
 
             let distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(position.x, position.y), player_pos);
@@ -81,7 +81,7 @@ impl<'a> System<'a> for MonsterAI {
                     let first_step = map.index_to_point2d(first_step_idx);
                     return MonsterTurnAction::Move(first_step);
                 } else {
-                    return MonsterTurnAction::Wait;
+                    return MonsterTurnAction::Wait { is_confused: false };
                 }
             } else {
                 let delta: (i32, i32);
@@ -101,7 +101,7 @@ impl<'a> System<'a> for MonsterAI {
                 if RNG.roll_die(7) > 1 {
                     return MonsterTurnAction::Move(next_step);
                 } else {
-                    return MonsterTurnAction::Wait;
+                    return MonsterTurnAction::Wait { is_confused: false };
                 }
             }
         };
@@ -118,8 +118,13 @@ impl<'a> System<'a> for MonsterAI {
                 MonsterTurnAction::Move(destination) => {
                     wants_to_move.insert(entity, WantsToMove { destination }).expect("Unable to insert intent");
                 }
-                MonsterTurnAction::Wait => {
-                    wants_to_wait.insert(entity, WantsToWait).expect("Unable to insert intent");
+                MonsterTurnAction::Wait { is_confused } => {
+                    let cause = match is_confused {
+                        true => WaitCause::Confusion,
+                        false => WaitCause::Choice,
+                    };
+
+                    wants_to_wait.insert(entity, WantsToWait { cause }).expect("Unable to insert intent");
                 }
             }
         }

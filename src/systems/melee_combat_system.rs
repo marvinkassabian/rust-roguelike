@@ -1,9 +1,8 @@
 extern crate specs;
 
-use rltk::Point;
 use specs::prelude::*;
 
-use crate::{CanMelee, CombatStats, GameLog, Name, ParticleBuilder, Position, SuffersDamage, TakesTurn, WantsToMelee};
+use crate::{CanMelee, CombatStats, GameLog, Name, SuffersDamage, TakesTurn, WantsToMelee};
 
 pub struct MeleeCombatSystem;
 
@@ -16,8 +15,6 @@ impl<'a> System<'a> for MeleeCombatSystem {
         WriteStorage<'a, SuffersDamage>,
         WriteStorage<'a, TakesTurn>,
         ReadStorage<'a, CanMelee>,
-        ReadStorage<'a, Position>,
-        WriteExpect<'a, ParticleBuilder>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -29,8 +26,6 @@ impl<'a> System<'a> for MeleeCombatSystem {
             mut suffers_damage,
             mut takes_turn,
             can_melee,
-            positions,
-            mut particle_builder,
         ) = data;
 
         for (wants_melee, name, stats, mut takes_turn, can_melee) in (&wants_melee, &names, &combat_stats, &mut takes_turn, &can_melee).join() {
@@ -61,15 +56,6 @@ impl<'a> System<'a> for MeleeCombatSystem {
                     &name.name,
                     &target_name.name,
                     damage));
-
-                if let Some(target_position) = positions.get(wants_melee.target) {
-                    particle_builder.request_aura(
-                        Point::new(target_position.x, target_position.y),
-                        300.,
-                        rltk::RGB::named(rltk::ORANGE),
-                        rltk::to_cp437('‼'),
-                    );
-                }
 
                 suffers_damage
                     .insert(wants_melee.target, SuffersDamage { amount: damage })

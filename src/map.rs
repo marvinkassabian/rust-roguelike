@@ -1,16 +1,18 @@
 use std::cmp::{max, min};
 
 use rltk::{Algorithm2D, BaseMap, Point, Rect};
+use serde::{Deserialize, Serialize};
 use specs::prelude::*;
 
 use crate::RNG;
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Serialize, Deserialize, Copy, Clone, Debug)]
 pub enum TileType {
     Wall,
     Floor,
 }
 
+#[derive(Default, Serialize, Deserialize, Clone, Debug)]
 pub struct Map {
     pub tiles: Vec<TileType>,
     pub rooms: Vec<Rect>,
@@ -19,6 +21,9 @@ pub struct Map {
     pub revealed_tiles: Vec<bool>,
     pub visible_tiles: Vec<bool>,
     pub blocked: Vec<bool>,
+
+    #[serde(skip_serializing)]
+    #[serde(skip_deserializing)]
     pub tile_content: Vec<Vec<Entity>>,
 }
 

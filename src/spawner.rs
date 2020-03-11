@@ -1,8 +1,9 @@
 use rltk::{Algorithm2D, Point, Rect, RGB};
 use specs::{Entity, World};
 use specs::prelude::*;
+use specs::saveload::{MarkedBuilder, SimpleMarker};
 
-use crate::{AreaOfEffect, BlocksTile, CanMelee, CanMove, CombatStats, Confusion, Consumable, DEBUG, GlobalTurn, GlobalTurnTimeScore, InBackpack, InflictsDamage, Item, Map, Monster, Name, Player, Position, ProvidesHealing, Ranged, Renderable, RNG, TakesTurn, Viewshed};
+use crate::{AreaOfEffect, BlocksTile, CanMelee, CanMove, CombatStats, Confusion, Consumable, DEBUG, GlobalTurn, GlobalTurnTimeScore, InBackpack, InflictsDamage, Item, Map, Monster, Name, Player, Position, ProvidesHealing, Ranged, Renderable, RNG, SerializeMe, TakesTurn, Viewshed};
 
 const MAX_MONSTERS: i32 = 4;
 const MAX_ITEMS: i32 = 2;
@@ -34,6 +35,7 @@ pub fn player(ecs: &mut World, x: i32, y: i32) -> Entity {
         .with(TakesTurn { time_score: 0 })
         .with(CanMove { time_cost: 20 })
         .with(CanMelee { time_cost: 110 })
+        .marked::<SimpleMarker<SerializeMe>>()
         .build()
 }
 
@@ -81,7 +83,8 @@ fn monster<S: ToString>(ecs: &mut World, x: i32, y: i32, glyph: u8, name: S) {
         })
         .with(TakesTurn { time_score: 0 })
         .with(CanMove { time_cost: 30 })
-        .with(CanMelee { time_cost: 180 });
+        .with(CanMelee { time_cost: 180 })
+        .marked::<SimpleMarker<SerializeMe>>();
 
 
     if DEBUG {
@@ -104,9 +107,20 @@ pub fn random_item(ecs: &mut World, x: i32, y: i32) {
 }
 
 pub fn health_potion(ecs: &mut World, x: i32, y: i32) {
+    health_potion_base(ecs)
+        .with(Position { x, y })
+        .build();
+}
+
+pub fn health_potion_in_pack(ecs: &mut World, owner: Entity) {
+    health_potion_base(ecs)
+        .with(InBackpack { owner })
+        .build();
+}
+
+pub fn health_potion_base(ecs: &mut World) -> EntityBuilder {
     ecs
         .create_entity()
-        .with(Position { x, y })
         .with(Renderable {
             glyph: rltk::to_cp437('¡'),
             fg: RGB::named(rltk::MAGENTA),
@@ -119,7 +133,7 @@ pub fn health_potion(ecs: &mut World, x: i32, y: i32) {
         .with(ProvidesHealing {
             heal_amount: 8
         })
-        .build();
+        .marked::<SimpleMarker<SerializeMe>>()
 }
 
 pub fn magic_missile_scroll(ecs: &mut World, x: i32, y: i32) {
@@ -142,6 +156,7 @@ pub fn magic_missile_scroll_base(ecs: &mut World) -> EntityBuilder {
         .with(Consumable)
         .with(Ranged { range: 6 })
         .with(InflictsDamage { damage: 8 })
+        .marked::<SimpleMarker<SerializeMe>>()
 }
 
 pub fn fireball_scroll(ecs: &mut World, x: i32, y: i32) {
@@ -175,6 +190,7 @@ fn confusion_scroll_base(ecs: &mut World) -> EntityBuilder {
         .with(Consumable)
         .with(Ranged { range: 6 })
         .with(Confusion { turns: 4 })
+        .marked::<SimpleMarker<SerializeMe>>()
 }
 
 fn magic_missile_scroll_in_pack(ecs: &mut World, owner: Entity) {
@@ -206,6 +222,7 @@ fn fireball_scroll_base(ecs: &mut World) -> EntityBuilder {
         .with(Ranged { range: 6 })
         .with(InflictsDamage { damage: 20 })
         .with(AreaOfEffect { radius: 3 })
+        .marked::<SimpleMarker<SerializeMe>>()
 }
 
 pub fn spawn_map(ecs: &mut World, map: &Map) {
@@ -214,6 +231,7 @@ pub fn spawn_map(ecs: &mut World, map: &Map) {
     ecs.insert(Point::new(pt.x, pt.y));
     let player = player(ecs, pt.x, pt.y);
 
+    health_potion_in_pack(ecs, player);
     confusion_scroll_in_pack(ecs, player);
     magic_missile_scroll_in_pack(ecs, player);
 
@@ -271,6 +289,7 @@ pub fn spawn_global_turn(ecs: &mut World) {
         .with(Name { name: "Global Turn".to_string() })
         .with(GlobalTurn)
         .with(TakesTurn { time_score: 0 })
+        .marked::<SimpleMarker<SerializeMe>>()
         .build();
 
     ecs.insert(GlobalTurnTimeScore { time_score: 0 });

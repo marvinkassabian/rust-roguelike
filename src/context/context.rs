@@ -1,7 +1,10 @@
+use std::fmt::Display;
+
 use rltk::{ColorPair, Console, DrawBatch, Point, Rect, RGB, Rltk};
 
 use crate::CONSOLE_INDEX;
 
+//TODO swap bool with two interface implementations
 const USE_BUFFER: bool = true;
 
 pub struct Context<'a> {
@@ -81,7 +84,7 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn print_color<S: ToString>(&mut self, pos: Point, text: S, color: ColorPair) {
+    pub fn print_color<S: Display>(&mut self, pos: Point, text: S, color: ColorPair) {
         if USE_BUFFER {
             let mut draw_batch = DrawBatch::new();
             draw_batch.print_color(pos, text, color);
@@ -101,7 +104,7 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn print<S: ToString>(&mut self, pos: Point, text: S) {
+    pub fn print<S: Display>(&mut self, pos: Point, text: S) {
         if USE_BUFFER {
             let mut draw_batch = DrawBatch::new();
             draw_batch.print(pos, text);
@@ -124,5 +127,15 @@ impl<'a> Context<'a> {
     pub fn get_screen_size(&self) -> (u32, u32) {
         let (width, height) = self.rltk.get_char_size();
         (width, height)
+    }
+
+    pub fn print_color_centered<S: Display>(&mut self, y: i32, color: ColorPair, text: S) {
+        if USE_BUFFER {
+            let mut draw_batch = DrawBatch::new();
+            draw_batch.print_color_centered(y, text, color);
+            draw_batch.submit(0);
+        } else {
+            self.rltk.print_color_centered(y, color.fg, color.bg, &text.to_string());
+        }
     }
 }
